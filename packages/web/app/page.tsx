@@ -204,6 +204,8 @@ export default function HomePage() {
           sessions={sessions}
           busy={busy}
           onLogin={(platform) => void startJob('/api/login', { platform })}
+          onRefresh={() => void refreshData()}
+          onError={setError}
         />
         <ScrapeCard
           busy={busy}

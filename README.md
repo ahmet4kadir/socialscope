@@ -35,7 +35,10 @@ Everything else happens in the control panel (Turkish UI):
 1. **Giriş** — click a platform's login button (Instagram or X): a real
    browser window opens on the machine running SocialScope; log in manually
    (2FA works), the session is saved locally and reused from then on. No
-   password ever touches the app.
+   password ever touches the app. On a **headless server** (no display),
+   don't log in there — instead log in on your own machine, click **İndir**
+   to download the session file, then **Yükle** it on the server's panel. The
+   server never opens a browser for login.
 2. **Tarama** — pick a platform, enter a username, pick the role (my account
    / competitor), start the scrape, and watch the collector's log live.
 3. **Genel Bakış** — saved accounts as overview cards (post count, average
@@ -60,6 +63,10 @@ snapshots, stopping automatically at 48h. Posts can also be enrolled from the
 dashboard ("Takibe Al" on any post) — the tracker process must be running for
 the schedule to execute. Platforms without a saved session are skipped
 gracefully.
+
+Every account sweep also records a **follower/following/post-count snapshot**,
+so follower growth is tracked over time and shown on the dashboard cards
+(current count plus the change since the last sweep).
 
 Scrapes are throttled by design: max 30 posts per account, 2-6s human-like
 delays, one scrape session at a time (also enforced across the web UI and
