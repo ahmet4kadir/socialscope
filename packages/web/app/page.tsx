@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { AccountRole } from '@socialscope/shared';
 
-import { AccountsPanel } from '@/components/AccountsPanel';
+import { DashboardPanel } from '@/components/DashboardPanel';
 import { JobLogCard } from '@/components/JobLogCard';
+import { PostsPanel } from '@/components/PostsPanel';
 import { ScrapeCard } from '@/components/ScrapeCard';
 import { SessionCard } from '@/components/SessionCard';
 import type {
@@ -20,6 +21,7 @@ const GENERIC_ERROR = 'Sunucuya ulaşılamadı — sayfayı yenileyip tekrar den
 export default function HomePage() {
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
   const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
+  const [schemaWarning, setSchemaWarning] = useState<string | null>(null);
   const [job, setJob] = useState<JobView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ platform: string; username: string } | null>(null);
@@ -35,7 +37,12 @@ export default function HomePage() {
         setSessions(((await sessionsRes.json()) as { sessions: SessionInfo[] }).sessions);
       }
       if (accountsRes.ok) {
-        setAccounts(((await accountsRes.json()) as { accounts: AccountSummary[] }).accounts);
+        const data = (await accountsRes.json()) as {
+          accounts: AccountSummary[];
+          error?: string;
+        };
+        setAccounts(data.accounts);
+        setSchemaWarning(data.error ?? null);
       }
     } catch {
       setError(GENERIC_ERROR);
@@ -95,8 +102,8 @@ export default function HomePage() {
     }
   }, []);
 
-  const loadPosts = useCallback(async (account: AccountSummary) => {
-    setSelected({ platform: account.platform, username: account.username });
+  const loadPosts = useCallback(async (account: { platform: string; username: string }) => {
+    setSelected(account);
     setPosts(null);
     try {
       const res = await fetch(
@@ -112,10 +119,55 @@ export default function HomePage() {
     }
   }, []);
 
+  const addAccount = useCallback(
+    async (username: string, role: AccountRole) => {
+      setError(null);
+      try {
+        const res = await fetch('/api/accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platform: 'instagram', username, role }),
+        });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(data.error ?? GENERIC_ERROR);
+          return;
+        }
+        void refreshData();
+      } catch {
+        setError(GENERIC_ERROR);
+      }
+    },
+    [refreshData],
+  );
+
+  const removeAccount = useCallback(
+    async (account: AccountSummary) => {
+      setError(null);
+      try {
+        await fetch(
+          `/api/accounts?platform=${account.platform}&username=${encodeURIComponent(account.username)}`,
+          { method: 'DELETE' },
+        );
+        if (
+          selected?.platform === account.platform &&
+          selected.username === account.username
+        ) {
+          setSelected(null);
+          setPosts(null);
+        }
+        void refreshData();
+      } catch {
+        setError(GENERIC_ERROR);
+      }
+    },
+    [refreshData, selected],
+  );
+
   const busy = job?.status === 'running';
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+    <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">SocialScope</h1>
         <p className="text-slate-400">
@@ -129,6 +181,23 @@ export default function HomePage() {
           {error}
         </p>
       )}
+
+      <DashboardPanel
+        accounts={accounts}
+        busy={busy}
+        schemaWarning={schemaWarning}
+        onAdd={(username, role) => void addAccount(username, role)}
+        onRemove={(account) => void removeAccount(account)}
+        onScrape={(account) =>
+          void startJob('/api/scrape', {
+            platform: account.platform,
+            username: account.username,
+            role: account.role,
+            force: false,
+          })
+        }
+        onShowPosts={(account) => void loadPosts(account)}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <SessionCard
@@ -151,12 +220,7 @@ export default function HomePage() {
 
       {job && <JobLogCard job={job} />}
 
-      <AccountsPanel
-        accounts={accounts}
-        selected={selected}
-        posts={posts}
-        onSelect={(account) => void loadPosts(account)}
-      />
+      {selected && <PostsPanel account={selected} posts={posts} />}
     </main>
   );
 }

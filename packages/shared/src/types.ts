@@ -22,6 +22,8 @@ export interface NormalizedPost {
   hashtags: string[];
   /** Canonical URL of the post; doubles as its stable external identifier. */
   url: string;
+  /** Small preview image URL from the platform CDN, when available. */
+  thumbnail_url?: string;
 }
 
 /**
@@ -51,6 +53,14 @@ export interface PostRow {
   /** JSON-encoded string[] of hashtags (without the leading '#'). */
   hashtags_json: string;
   url: string;
+  thumbnail_url: string | null;
+}
+
+export interface AccountRow {
+  platform: Platform;
+  username: string;
+  role: AccountRole;
+  added_at: string;
 }
 
 export interface SnapshotRow {

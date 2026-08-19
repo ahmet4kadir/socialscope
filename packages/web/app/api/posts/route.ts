@@ -12,6 +12,7 @@ interface PostRowWithSnapshot {
   media_type: MediaType;
   hashtags_json: string;
   url: string;
+  thumbnail_url: string | null;
   likes: number;
   comments: number;
   shares: number | null;
@@ -40,7 +41,7 @@ export function GET(request: Request): NextResponse {
   const rows = db
     .prepare(
       `SELECT p.id, p.posted_at, p.content_text, p.media_type, p.hashtags_json, p.url,
-              s.likes, s.comments, s.shares, s.views, s.captured_at
+              p.thumbnail_url, s.likes, s.comments, s.shares, s.views, s.captured_at
        FROM posts p
        JOIN snapshots s
          ON s.post_id = p.id
@@ -65,6 +66,7 @@ export function GET(request: Request): NextResponse {
       mediaType: row.media_type,
       hashtags,
       url: row.url,
+      thumbnailUrl: row.thumbnail_url,
       likes: row.likes,
       comments: row.comments,
       shares: row.shares,

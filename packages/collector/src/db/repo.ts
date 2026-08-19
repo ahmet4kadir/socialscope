@@ -20,11 +20,23 @@ export interface SaveResult {
   snapshotAt: string;
 }
 
+/** Registers (or re-classifies) an account in the analysis registry. */
+export function upsertAccount(
+  db: Database,
+  account: ScrapedAccount,
+  addedAt = new Date().toISOString(),
+): void {
+  db.prepare(
+    `INSERT INTO accounts (platform, username, role, added_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT (platform, username) DO UPDATE SET role = excluded.role`,
+  ).run(account.platform, account.username, account.role, addedAt);
+}
+
 /**
- * Writes one account sweep's results in one transaction: upserts each post,
- * records a snapshot of its counters, and aligns the role of ALL the
- * account's posts (so reclassifying an account with a different --role can't
- * leave it split across both roles).
+ * Writes one account sweep's results in one transaction: registers the
+ * account, upserts each post, records a snapshot of its counters, and aligns
+ * the role of ALL the account's posts (so reclassifying an account with a
+ * different --role can't leave it split across both roles).
  */
 export function saveScrapedPosts(
   db: Database,
@@ -35,13 +47,14 @@ export function saveScrapedPosts(
   const snapshotAt = new Date().toISOString();
 
   const upsertPost = db.prepare(`
-    INSERT INTO posts (id, platform, username, role, posted_at, content_text, media_type, hashtags_json, url)
-    VALUES (@id, @platform, @username, @role, @posted_at, @content_text, @media_type, @hashtags_json, @url)
+    INSERT INTO posts (id, platform, username, role, posted_at, content_text, media_type, hashtags_json, url, thumbnail_url)
+    VALUES (@id, @platform, @username, @role, @posted_at, @content_text, @media_type, @hashtags_json, @url, @thumbnail_url)
     ON CONFLICT (id) DO UPDATE SET
       role = excluded.role,
       content_text = excluded.content_text,
       media_type = excluded.media_type,
-      hashtags_json = excluded.hashtags_json
+      hashtags_json = excluded.hashtags_json,
+      thumbnail_url = COALESCE(excluded.thumbnail_url, thumbnail_url)
   `);
   const insertSnapshot = db.prepare(`
     INSERT OR REPLACE INTO snapshots (post_id, captured_at, likes, comments, shares, views)
@@ -55,6 +68,7 @@ export function saveScrapedPosts(
   let saved = 0;
   let skipped = 0;
   db.transaction(() => {
+    upsertAccount(db, account);
     alignRole.run(role, account.platform, account.username);
     for (const post of posts) {
       const id = derivePostId(post.platform, post.url);
@@ -72,6 +86,7 @@ export function saveScrapedPosts(
         media_type: post.media_type,
         hashtags_json: JSON.stringify(post.hashtags),
         url: post.url,
+        thumbnail_url: post.thumbnail_url ?? null,
       });
       insertSnapshot.run(
         id,
@@ -88,16 +103,14 @@ export function saveScrapedPosts(
   return { saved, skipped, snapshotAt };
 }
 
-/** Role this account was saved with previously, if we've seen it before. */
+/** Role this account is registered with, if it's in the registry. */
 export function getAccountRole(
   db: Database,
   platform: Platform,
   username: string,
 ): AccountRole | null {
   const row = db
-    .prepare(
-      'SELECT role FROM posts WHERE platform = ? AND username = ? LIMIT 1',
-    )
+    .prepare('SELECT role FROM accounts WHERE platform = ? AND username = ?')
     .get(platform, username) as { role: AccountRole } | undefined;
   return row?.role ?? null;
 }

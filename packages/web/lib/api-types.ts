@@ -26,9 +26,12 @@ export interface AccountSummary {
   platform: Platform;
   username: string;
   role: AccountRole;
+  addedAt: string;
   postCount: number;
   lastPostedAt: string | null;
   sweptAt: string | null;
+  avgLikes: number | null;
+  avgComments: number | null;
 }
 
 export interface PostWithMetrics {
@@ -38,6 +41,7 @@ export interface PostWithMetrics {
   mediaType: MediaType;
   hashtags: string[];
   url: string;
+  thumbnailUrl: string | null;
   likes: number;
   comments: number;
   shares: number | null;

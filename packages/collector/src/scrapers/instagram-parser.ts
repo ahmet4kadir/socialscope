@@ -83,6 +83,7 @@ function toNormalizedPost(
   const views =
     count(media.play_count) ?? count(media.view_count) ?? count(media.ig_play_count);
   const shares = count(media.reshare_count);
+  const thumbnail = readThumbnail(media);
 
   return {
     date: new Date(takenAtSeconds * 1000).toISOString(),
@@ -97,7 +98,39 @@ function toNormalizedPost(
     media_type: readMediaType(media, productType),
     hashtags: extractHashtags(caption),
     url,
+    ...(thumbnail !== undefined ? { thumbnail_url: thumbnail } : {}),
   };
+}
+
+function readThumbnail(media: Json): string | undefined {
+  const direct = imageCandidateUrl(media);
+  if (direct) return direct;
+  // Carousels keep their images on the child media objects.
+  const carousel = media.carousel_media;
+  if (Array.isArray(carousel) && carousel[0] && typeof carousel[0] === 'object') {
+    return imageCandidateUrl(carousel[0] as Json);
+  }
+  return undefined;
+}
+
+function imageCandidateUrl(obj: Json): string | undefined {
+  const versions = obj.image_versions2;
+  if (versions && typeof versions === 'object') {
+    const { candidates } = versions as Json;
+    if (Array.isArray(candidates) && candidates.length > 0) {
+      // Candidates are ordered largest-first; the last one is thumbnail-sized.
+      const smallest: unknown = candidates[candidates.length - 1];
+      if (smallest && typeof smallest === 'object') {
+        const { url } = smallest as Json;
+        if (typeof url === 'string' && url !== '') return url;
+      }
+    }
+  }
+  for (const key of ['display_uri', 'display_url', 'thumbnail_src'] as const) {
+    const value = obj[key];
+    if (typeof value === 'string' && value !== '') return value;
+  }
+  return undefined;
 }
 
 function count(value: unknown): number | undefined {
