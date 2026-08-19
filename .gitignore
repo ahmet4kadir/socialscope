@@ -26,3 +26,6 @@ dist/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Claude Code personal settings (launch.json is shared, this is not)
+.claude/settings.local.json

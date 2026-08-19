@@ -1,62 +1,162 @@
-const pipeline = [
-  {
-    step: 'npm run login',
-    detail: 'Tarayıcıda bir kez elle giriş yapın; oturum kaydedilir',
-  },
-  {
-    step: 'npm run scrape',
-    detail: 'Kendi hesabınızın ve rakiplerin son gönderilerini çekin',
-  },
-  {
-    step: 'npm run tracker',
-    detail: 'Yeni gönderilerin ilk 48 saatini saatlik izleyin',
-  },
-  {
-    step: 'npm run dev',
-    detail: 'Metrikleri, karşılaştırmaları ve önerileri burada inceleyin',
-  },
-];
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+
+import type { AccountRole } from '@socialscope/shared';
+
+import { AccountsPanel } from '@/components/AccountsPanel';
+import { JobLogCard } from '@/components/JobLogCard';
+import { ScrapeCard } from '@/components/ScrapeCard';
+import { SessionCard } from '@/components/SessionCard';
+import type {
+  AccountSummary,
+  JobView,
+  PostWithMetrics,
+  SessionInfo,
+} from '@/lib/api-types';
+
+const GENERIC_ERROR = 'Sunucuya ulaşılamadı — sayfayı yenileyip tekrar deneyin.';
 
 export default function HomePage() {
+  const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
+  const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
+  const [job, setJob] = useState<JobView | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<{ platform: string; username: string } | null>(null);
+  const [posts, setPosts] = useState<PostWithMetrics[] | null>(null);
+
+  const refreshData = useCallback(async () => {
+    try {
+      const [sessionsRes, accountsRes] = await Promise.all([
+        fetch('/api/sessions'),
+        fetch('/api/accounts'),
+      ]);
+      if (sessionsRes.ok) {
+        setSessions(((await sessionsRes.json()) as { sessions: SessionInfo[] }).sessions);
+      }
+      if (accountsRes.ok) {
+        setAccounts(((await accountsRes.json()) as { accounts: AccountSummary[] }).accounts);
+      }
+    } catch {
+      setError(GENERIC_ERROR);
+    }
+  }, []);
+
+  // Initial load: data + reattach to a job that may already be running.
+  useEffect(() => {
+    void refreshData();
+    void (async () => {
+      try {
+        const res = await fetch('/api/jobs');
+        if (!res.ok) return;
+        const data = (await res.json()) as { jobs: JobView[]; active: JobView | null };
+        setJob(data.active ?? data.jobs[0] ?? null);
+      } catch {
+        // Job history is a nicety; the page works without it.
+      }
+    })();
+  }, [refreshData]);
+
+  // Poll the active job; refresh data once it finishes.
+  useEffect(() => {
+    if (job?.status !== 'running') return;
+    const interval = setInterval(() => {
+      void (async () => {
+        try {
+          const res = await fetch(`/api/jobs/${job.id}`);
+          if (!res.ok) return;
+          const data = (await res.json()) as { job: JobView };
+          setJob(data.job);
+          if (data.job.status !== 'running') void refreshData();
+        } catch {
+          // Transient polling failure — the next tick retries.
+        }
+      })();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [job?.id, job?.status, refreshData]);
+
+  const startJob = useCallback(async (url: string, body: unknown) => {
+    setError(null);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json()) as { job?: JobView; error?: string };
+      if (!res.ok || !data.job) {
+        setError(data.error ?? GENERIC_ERROR);
+        return;
+      }
+      setJob(data.job);
+    } catch {
+      setError(GENERIC_ERROR);
+    }
+  }, []);
+
+  const loadPosts = useCallback(async (account: AccountSummary) => {
+    setSelected({ platform: account.platform, username: account.username });
+    setPosts(null);
+    try {
+      const res = await fetch(
+        `/api/posts?platform=${account.platform}&username=${encodeURIComponent(account.username)}`,
+      );
+      if (!res.ok) {
+        setPosts([]);
+        return;
+      }
+      setPosts(((await res.json()) as { posts: PostWithMetrics[] }).posts);
+    } catch {
+      setPosts([]);
+    }
+  }, []);
+
+  const busy = job?.status === 'running';
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-10 px-6 py-16">
-      <header className="space-y-3">
-        <h1 className="text-4xl font-bold tracking-tight">SocialScope</h1>
-        <p className="text-lg text-slate-400">
-          Sosyal medya pazarlama analizi — kendi hesaplarınızı ve rakiplerinizi
-          tarayın, gönderi performansını saat saat takip edin, veriyi somut
-          önerilere dönüştürün.
+    <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">SocialScope</h1>
+        <p className="text-slate-400">
+          Sosyal medya pazarlama analizi — giriş yapın, hesapları tarayın ve
+          verileri buradan takip edin.
         </p>
       </header>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          İş akışı
-        </h2>
-        <ol className="space-y-2">
-          {pipeline.map(({ step, detail }, index) => (
-            <li
-              key={step}
-              className="flex items-baseline gap-4 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3"
-            >
-              <span className="text-sm font-medium text-slate-500">
-                {index + 1}
-              </span>
-              <div>
-                <code className="text-sm font-semibold text-emerald-400">
-                  {step}
-                </code>
-                <p className="text-sm text-slate-400">{detail}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {error && (
+        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {error}
+        </p>
+      )}
 
-      <p className="text-sm text-slate-500">
-        Veritabanına veri düştüğünde panel canlanır — başlamak için en az bir
-        hesap tarayın.
-      </p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SessionCard
+          sessions={sessions}
+          busy={busy}
+          onLogin={() => void startJob('/api/login', { platform: 'instagram' })}
+        />
+        <ScrapeCard
+          busy={busy}
+          onScrape={(username: string, role: AccountRole, force: boolean) =>
+            void startJob('/api/scrape', {
+              platform: 'instagram',
+              username,
+              role,
+              force,
+            })
+          }
+        />
+      </div>
+
+      {job && <JobLogCard job={job} />}
+
+      <AccountsPanel
+        accounts={accounts}
+        selected={selected}
+        posts={posts}
+        onSelect={(account) => void loadPosts(account)}
+      />
     </main>
   );
 }
