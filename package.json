@@ -1,0 +1,24 @@
+{
+  "name": "socialscope",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Social media marketing analysis tool: scraping, time-series post tracking, metrics, and LLM-powered recommendations",
+  "workspaces": [
+    "packages/shared",
+    "packages/collector",
+    "packages/web"
+  ],
+  "scripts": {
+    "login": "npm run login -w @socialscope/collector --",
+    "scrape": "npm run scrape -w @socialscope/collector --",
+    "migrate": "npm run migrate -w @socialscope/collector",
+    "db:status": "npm run db:status -w @socialscope/collector",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "npm run dev -w @socialscope/web",
+    "build": "npm run build -w @socialscope/web",
+    "start": "npm run start -w @socialscope/web"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}
