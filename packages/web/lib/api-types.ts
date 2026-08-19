@@ -32,6 +32,10 @@ export interface AccountSummary {
   sweptAt: string | null;
   avgLikes: number | null;
   avgComments: number | null;
+  followers: number | null;
+  following: number | null;
+  /** Follower change since the previous account snapshot; null if <2 snapshots. */
+  followerGrowth: number | null;
 }
 
 export interface PostWithMetrics {

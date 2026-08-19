@@ -26,6 +26,13 @@ export interface NormalizedPost {
   thumbnail_url?: string;
 }
 
+/** Account-level (profile) stats captured alongside a post scrape. */
+export interface AccountInfo {
+  followers: number | null;
+  following: number | null;
+  postCount: number | null;
+}
+
 /**
  * A source of posts for one platform. Implementations: InstagramScraper,
  * XScraper, CSV import.

@@ -1,5 +1,6 @@
 import {
   extractHashtags,
+  type AccountInfo,
   type MediaType,
   type NormalizedPost,
 } from '@socialscope/shared';
@@ -44,6 +45,69 @@ export function extractInstagramPosts(
     if (post) found.set(post.url, post);
   });
   return [...found.values()];
+}
+
+/**
+ * Finds the profile-stats object for `username` anywhere in a payload and
+ * returns its follower/following/post counts. Handles both the web
+ * (edge_followed_by.count) and mobile-API (follower_count) user shapes.
+ */
+export function extractInstagramAccountInfo(
+  payload: unknown,
+  username: string,
+): AccountInfo | null {
+  let result: AccountInfo | null = null;
+  walkUsers(payload, 0, (user) => {
+    if (readUsernameField(user)?.toLowerCase() !== username.toLowerCase()) return;
+    const info: AccountInfo = {
+      followers:
+        edgeCount(user.edge_followed_by) ?? countField(user.follower_count),
+      following: edgeCount(user.edge_follow) ?? countField(user.following_count),
+      postCount:
+        edgeCount(user.edge_owner_to_timeline_media) ?? countField(user.media_count),
+    };
+    // Keep the richest hit (the one that actually carries a follower count).
+    if (info.followers !== null || result === null) result = info;
+  });
+  return result;
+}
+
+function readUsernameField(user: Json): string | undefined {
+  return typeof user.username === 'string' ? user.username : undefined;
+}
+
+function edgeCount(edge: unknown): number | null {
+  if (edge && typeof edge === 'object') {
+    const { count } = edge as Json;
+    if (typeof count === 'number' && count >= 0) return count;
+  }
+  return null;
+}
+
+function countField(value: unknown): number | null {
+  return typeof value === 'number' && value >= 0 ? value : null;
+}
+
+// A user/profile object has a username plus at least one follower-ish field.
+function looksLikeUser(obj: Json): boolean {
+  if (typeof obj.username !== 'string') return false;
+  return (
+    obj.edge_followed_by !== undefined ||
+    obj.follower_count !== undefined ||
+    obj.edge_follow !== undefined ||
+    obj.following_count !== undefined
+  );
+}
+
+function walkUsers(value: unknown, depth: number, onUser: (u: Json) => void): void {
+  if (depth > MAX_DEPTH || value === null || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    for (const item of value) walkUsers(item, depth + 1, onUser);
+    return;
+  }
+  const obj = value as Json;
+  if (looksLikeUser(obj)) onUser(obj);
+  for (const child of Object.values(obj)) walkUsers(child, depth + 1, onUser);
 }
 
 function walk(value: unknown, depth: number, onMedia: (m: Json) => void): void {

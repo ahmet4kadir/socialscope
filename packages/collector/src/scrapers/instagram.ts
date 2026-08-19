@@ -1,10 +1,13 @@
 import type { Page } from 'playwright';
 
-import type { NormalizedPost } from '@socialscope/shared';
+import type { AccountInfo, NormalizedPost } from '@socialscope/shared';
 
 import { instagramConfig } from '../config/instagram';
 import { PlaywrightScraper } from './base';
-import { extractInstagramPosts } from './instagram-parser';
+import {
+  extractInstagramAccountInfo,
+  extractInstagramPosts,
+} from './instagram-parser';
 
 export class InstagramScraper extends PlaywrightScraper {
   readonly platform = 'instagram' as const;
@@ -21,6 +24,30 @@ export class InstagramScraper extends PlaywrightScraper {
     usernameFilter: string | null,
   ): NormalizedPost[] {
     return extractInstagramPosts(payload, usernameFilter);
+  }
+
+  protected extractAccountInfo(payload: unknown, username: string): AccountInfo | null {
+    return extractInstagramAccountInfo(payload, username);
+  }
+
+  protected override async extractInlineAccountInfo(
+    page: Page,
+    username: string,
+  ): Promise<AccountInfo | null> {
+    const blobs = await page
+      .$$eval(instagramConfig.selectors.inlineDataScript, (scripts) =>
+        scripts.map((script) => script.textContent ?? ''),
+      )
+      .catch(() => [] as string[]);
+    for (const blob of blobs) {
+      try {
+        const info = extractInstagramAccountInfo(JSON.parse(blob), username);
+        if (info?.followers != null) return info;
+      } catch {
+        // Not JSON we care about.
+      }
+    }
+    return null;
   }
 
   protected async extractInlinePosts(

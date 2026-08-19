@@ -19,6 +19,12 @@ interface DashboardRow {
   avg_comments: number | null;
 }
 
+interface FollowerRow {
+  followers: number | null;
+  following: number | null;
+  prev_followers: number | null;
+}
+
 export function GET(): NextResponse {
   const db = openDbReadonly();
   if (!db) {
@@ -58,17 +64,49 @@ export function GET(): NextResponse {
     });
   }
 
-  const accounts: AccountSummary[] = rows.map((row) => ({
-    platform: row.platform,
-    username: row.username,
-    role: row.role,
-    addedAt: row.added_at,
-    postCount: row.post_count,
-    lastPostedAt: row.last_posted_at,
-    sweptAt: row.swept_at,
-    avgLikes: row.avg_likes,
-    avgComments: row.avg_comments,
-  }));
+  // Latest two follower snapshots per account → current count + growth delta.
+  const followerStmt = db.prepare(
+    `SELECT followers, following, prev_followers FROM (
+       SELECT followers, following,
+              LEAD(followers) OVER (ORDER BY captured_at DESC) AS prev_followers,
+              ROW_NUMBER() OVER (ORDER BY captured_at DESC) AS rn
+       FROM account_snapshots
+       WHERE platform = ? AND username = ?
+     ) WHERE rn = 1`,
+  );
+
+  const accounts: AccountSummary[] = rows.map((row) => {
+    let followers: number | null = null;
+    let following: number | null = null;
+    let followerGrowth: number | null = null;
+    try {
+      const f = followerStmt.get(row.platform, row.username) as FollowerRow | undefined;
+      if (f) {
+        followers = f.followers;
+        following = f.following;
+        followerGrowth =
+          f.followers !== null && f.prev_followers !== null
+            ? f.followers - f.prev_followers
+            : null;
+      }
+    } catch {
+      // account_snapshots table missing (pre-migration-003) — leave nulls.
+    }
+    return {
+      platform: row.platform,
+      username: row.username,
+      role: row.role,
+      addedAt: row.added_at,
+      postCount: row.post_count,
+      lastPostedAt: row.last_posted_at,
+      sweptAt: row.swept_at,
+      avgLikes: row.avg_likes,
+      avgComments: row.avg_comments,
+      followers,
+      following,
+      followerGrowth,
+    };
+  });
   return NextResponse.json({ dbReady: true, accounts });
 }
 

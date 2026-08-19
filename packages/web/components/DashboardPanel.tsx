@@ -123,7 +123,27 @@ export function DashboardPanel({
                 </span>
               </div>
 
-              <dl className="grid grid-cols-3 gap-2 text-center">
+              <dl className="grid grid-cols-4 gap-2 text-center">
+                <div className="rounded-md bg-slate-900 py-2">
+                  <dt className="text-[10px] uppercase tracking-wider text-slate-500">
+                    Takipçi
+                  </dt>
+                  <dd className="text-sm font-semibold">
+                    {account.followers === null
+                      ? '—'
+                      : account.followers.toLocaleString('tr-TR')}
+                    {account.followerGrowth !== null && account.followerGrowth !== 0 && (
+                      <span
+                        className={`ml-1 text-[10px] font-medium ${
+                          account.followerGrowth > 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
+                        {account.followerGrowth > 0 ? '▲' : '▼'}
+                        {Math.abs(account.followerGrowth).toLocaleString('tr-TR')}
+                      </span>
+                    )}
+                  </dd>
+                </div>
                 <div className="rounded-md bg-slate-900 py-2">
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">
                     Gönderi

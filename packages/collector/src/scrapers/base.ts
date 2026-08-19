@@ -2,6 +2,7 @@ import type { Browser, Page, Response } from 'playwright';
 
 import {
   derivePostId,
+  type AccountInfo,
   type DataSource,
   type NormalizedPost,
   type Platform,
@@ -47,12 +48,25 @@ export abstract class PlaywrightScraper implements DataSource {
     page: Page,
     usernameFilter: string | null,
   ): Promise<NormalizedPost[]>;
+  /** Profile stats (followers etc.) from one JSON payload, or null. */
+  protected abstract extractAccountInfo(
+    payload: unknown,
+    username: string,
+  ): AccountInfo | null;
   /** Throws a ScrapeError if the page shows a login wall or challenge. */
   protected abstract assertPageUsable(page: Page): Promise<void>;
 
   /** The most recent `limit` posts of an account's profile. */
   async fetchPosts(username: string, limit: number): Promise<NormalizedPost[]> {
-    const harvested = await this.collectFromPage(
+    return (await this.fetchProfile(username, limit)).posts;
+  }
+
+  /** Posts plus profile-level stats (followers, following, post count). */
+  async fetchProfile(
+    username: string,
+    limit: number,
+  ): Promise<{ posts: NormalizedPost[]; account: AccountInfo | null }> {
+    const { harvested, account } = await this.collectFromPage(
       this.profileUrl(username),
       username,
       limit,
@@ -68,9 +82,12 @@ export abstract class PlaywrightScraper implements DataSource {
       },
     );
 
-    return [...harvested.values()]
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, limit);
+    return {
+      posts: [...harvested.values()]
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, limit),
+      account,
+    };
   }
 
   /** One specific post by URL — used by the tracker for snapshot refreshes. */
@@ -80,7 +97,7 @@ export abstract class PlaywrightScraper implements DataSource {
       throw new ScrapeError(`Unrecognized ${this.platform} post URL: ${url}`);
     }
 
-    const harvested = await this.collectFromPage(url, null, 0, async (found, page) => {
+    const { harvested } = await this.collectFromPage(url, null, 0, async (found, page) => {
       if (found.has(id)) return;
       const dump = await dumpDebug(page, this.platform, 'post-not-found');
       throw new ScrapeError(
@@ -110,7 +127,7 @@ export abstract class PlaywrightScraper implements DataSource {
       harvested: Map<string, NormalizedPost>,
       page: Page,
     ) => Promise<void>,
-  ): Promise<Map<string, NormalizedPost>> {
+  ): Promise<{ harvested: Map<string, NormalizedPost>; account: AccountInfo | null }> {
     const releaseLock = acquireScrapeLock();
     let browser: Browser | undefined;
     try {
@@ -148,8 +165,23 @@ export abstract class PlaywrightScraper implements DataSource {
           harvested.set(derivePostId(post.platform, post.url) ?? post.url, post);
         }
       };
+      // Profile stats ride along in the same payloads; keep the fullest hit.
+      let account: AccountInfo | null = null;
+      const collectAccount = (info: AccountInfo | null): void => {
+        if (!info) return;
+        account = {
+          followers: info.followers ?? account?.followers ?? null,
+          following: info.following ?? account?.following ?? null,
+          postCount: info.postCount ?? account?.postCount ?? null,
+        };
+      };
       page.on('response', (response) => {
-        void this.harvestResponse(response, usernameFilter, collect);
+        void this.harvestResponse(
+          response,
+          usernameFilter,
+          collect,
+          collectAccount,
+        );
       });
 
       try {
@@ -169,8 +201,13 @@ export abstract class PlaywrightScraper implements DataSource {
           staleRounds = harvested.size === before ? staleRounds + 1 : 0;
         }
 
+        // Fill in account stats from the profile URL (usernameFilter is the
+        // account being viewed). Single-post fetches pass null and skip this.
+        if (usernameFilter !== null) {
+          collectAccount(await this.extractInlineAccountInfo(page, usernameFilter));
+        }
         await validate(harvested, page);
-        return harvested;
+        return { harvested, account };
       } catch (error) {
         if (error instanceof ScrapeError) throw error;
         // Dump while the page is still alive — the finally below destroys it.
@@ -220,19 +257,40 @@ export abstract class PlaywrightScraper implements DataSource {
     }
   }
 
+  /**
+   * Profile stats embedded in the initial HTML. Default: none. Instagram
+   * overrides this (its inline blobs carry the user object); X is a pure SPA.
+   */
+  protected extractInlineAccountInfo(
+    _page: Page,
+    _username: string,
+  ): Promise<AccountInfo | null> {
+    return Promise.resolve(null);
+  }
+
   private async harvestResponse(
     response: Response,
     usernameFilter: string | null,
     collect: (posts: NormalizedPost[]) => void,
+    collectAccount: (info: AccountInfo | null) => void,
   ): Promise<void> {
     try {
       const url = response.url();
       if (!this.apiResponsePatterns.some((pattern) => url.includes(pattern))) {
         return;
       }
+      // Instagram serves GraphQL as text/javascript, not application/json,
+      // so accept both. The URL filter + try/catch guard against non-data
+      // bodies that slip through.
       const contentType = response.headers()['content-type'] ?? '';
-      if (!contentType.includes('json')) return;
-      collect(this.extractPosts(await response.json(), usernameFilter));
+      if (!contentType.includes('json') && !contentType.includes('javascript')) {
+        return;
+      }
+      const payload = await response.json();
+      collect(this.extractPosts(payload, usernameFilter));
+      if (usernameFilter !== null) {
+        collectAccount(this.extractAccountInfo(payload, usernameFilter));
+      }
     } catch {
       // Non-JSON body or a teardown race — either way, not a post payload.
     }

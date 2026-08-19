@@ -2,6 +2,7 @@ import type { Database } from 'better-sqlite3';
 
 import {
   derivePostId,
+  type AccountInfo,
   type AccountRole,
   type AccountRow,
   type NormalizedPost,
@@ -158,6 +159,23 @@ export function recordSweep(
   db.prepare(
     'INSERT OR REPLACE INTO sweeps (platform, username, swept_at) VALUES (?, ?, ?)',
   ).run(platform, username, sweptAt);
+}
+
+/** Records one profile-stats observation (followers etc.), if any are known. */
+export function recordAccountSnapshot(
+  db: Database,
+  platform: Platform,
+  username: string,
+  info: AccountInfo | null,
+  capturedAt = new Date().toISOString(),
+): void {
+  if (!info || (info.followers === null && info.following === null && info.postCount === null)) {
+    return;
+  }
+  db.prepare(
+    `INSERT OR REPLACE INTO account_snapshots (platform, username, captured_at, followers, following, post_count)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(platform, username, capturedAt, info.followers, info.following, info.postCount);
 }
 
 /** All registered accounts (dashboard cards + the tracker's sweep list). */

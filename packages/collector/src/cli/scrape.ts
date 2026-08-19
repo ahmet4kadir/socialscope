@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util';
 
-import type { AccountRole, DataSource } from '@socialscope/shared';
+import type { AccountRole } from '@socialscope/shared';
 
 import { openDb, resolveDbPath } from '../db/connection';
 import { migrate } from '../db/migrate';
@@ -8,6 +8,7 @@ import {
   getAccountRole,
   isSweepFresh,
   lastSweepAt,
+  recordAccountSnapshot,
   recordSweep,
   saveScrapedPosts,
 } from '../db/repo';
@@ -77,14 +78,18 @@ async function main(): Promise<void> {
     }
 
     console.log(`Scraping ${platform}/@${username} (${role}, up to ${limit} posts)…`);
-    const scraper: DataSource = scraperFor(platform);
-    const posts = await scraper.fetchPosts(username, limit);
+    const { posts, account } = await scraperFor(platform).fetchProfile(username, limit);
 
     const result = saveScrapedPosts(db, { platform, username, role }, posts);
+    recordAccountSnapshot(db, platform, username, account);
     recordSweep(db, platform, username);
 
     const skippedNote = result.skipped > 0 ? `, skipped ${result.skipped} malformed` : '';
-    console.log(`\n[ok] Captured ${posts.length} post(s); saved ${result.saved} with a snapshot each${skippedNote}.`);
+    const followerNote =
+      account?.followers != null ? `, ${account.followers} followers` : '';
+    console.log(
+      `\n[ok] Captured ${posts.length} post(s); saved ${result.saved} with a snapshot each${skippedNote}${followerNote}.`,
+    );
     console.log(`     Database: ${resolveDbPath()}`);
     console.log('     Inspect with: npm run db:status');
   } finally {

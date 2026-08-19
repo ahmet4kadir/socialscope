@@ -1,5 +1,6 @@
 import {
   extractHashtags,
+  type AccountInfo,
   type MediaType,
   type NormalizedPost,
 } from '@socialscope/shared';
@@ -40,6 +41,56 @@ export function extractXPosts(
     if (post) found.set(post.url, post);
   });
   return [...found.values()];
+}
+
+/**
+ * Finds the user object for `username` in a payload and returns its
+ * follower/following/tweet counts. X keeps these on user.legacy (and mirrors
+ * some onto newer sub-objects).
+ */
+export function extractXAccountInfo(
+  payload: unknown,
+  username: string,
+): AccountInfo | null {
+  let result: AccountInfo | null = null;
+  walkUsers(payload, 0, (user) => {
+    const legacy = user.legacy && typeof user.legacy === 'object' ? (user.legacy as Json) : {};
+    const screenName = typeof legacy.screen_name === 'string' ? legacy.screen_name : undefined;
+    if (screenName?.toLowerCase() !== username.toLowerCase()) return;
+    result = {
+      followers: numField(legacy.followers_count),
+      following: numField(legacy.friends_count),
+      postCount: numField(legacy.statuses_count),
+    };
+  });
+  return result;
+}
+
+function numField(value: unknown): number | null {
+  return typeof value === 'number' && value >= 0 ? value : null;
+}
+
+// A user object has a legacy block carrying screen_name + followers_count.
+function looksLikeUser(obj: Json): boolean {
+  if (obj.__typename !== 'User' && !('rest_id' in obj && 'legacy' in obj)) return false;
+  const legacy = obj.legacy;
+  return (
+    !!legacy &&
+    typeof legacy === 'object' &&
+    typeof (legacy as Json).screen_name === 'string' &&
+    'followers_count' in (legacy as Json)
+  );
+}
+
+function walkUsers(value: unknown, depth: number, onUser: (u: Json) => void): void {
+  if (depth > MAX_DEPTH || value === null || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    for (const item of value) walkUsers(item, depth + 1, onUser);
+    return;
+  }
+  const obj = value as Json;
+  if (looksLikeUser(obj)) onUser(obj);
+  for (const child of Object.values(obj)) walkUsers(child, depth + 1, onUser);
 }
 
 function walk(value: unknown, depth: number, onTweet: (t: Json) => void): void {

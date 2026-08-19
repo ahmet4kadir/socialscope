@@ -1,10 +1,10 @@
 import type { Page } from 'playwright';
 
-import type { NormalizedPost } from '@socialscope/shared';
+import type { AccountInfo, NormalizedPost } from '@socialscope/shared';
 
 import { xConfig } from '../config/x';
 import { PlaywrightScraper } from './base';
-import { extractXPosts } from './x-parser';
+import { extractXAccountInfo, extractXPosts } from './x-parser';
 
 export class XScraper extends PlaywrightScraper {
   readonly platform = 'x' as const;
@@ -21,6 +21,10 @@ export class XScraper extends PlaywrightScraper {
     usernameFilter: string | null,
   ): NormalizedPost[] {
     return extractXPosts(payload, usernameFilter);
+  }
+
+  protected extractAccountInfo(payload: unknown, username: string): AccountInfo | null {
+    return extractXAccountInfo(payload, username);
   }
 
   protected extractInlinePosts(): Promise<NormalizedPost[]> {

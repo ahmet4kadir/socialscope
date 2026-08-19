@@ -4,6 +4,7 @@ export type {
   MediaType,
   NormalizedPost,
   DataSource,
+  AccountInfo,
   AccountRow,
   PostRow,
   SnapshotRow,

@@ -12,6 +12,7 @@ import {
   lastSnapshotAt,
   lastSweepAt,
   listAccounts,
+  recordAccountSnapshot,
   recordSweep,
   saveScrapedPosts,
 } from '../db/repo';
@@ -58,11 +59,12 @@ async function sweepAccounts(): Promise<void> {
     }
 
     try {
-      const posts = await scraperFor(account.platform).fetchPosts(
+      const { posts, account: info } = await scraperFor(account.platform).fetchProfile(
         account.username,
         SWEEP_LIMIT,
       );
       const result = saveScrapedPosts(db, account, posts);
+      recordAccountSnapshot(db, account.platform, account.username, info);
       recordSweep(db, account.platform, account.username);
 
       let enrolled = 0;

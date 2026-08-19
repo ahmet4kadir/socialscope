@@ -17,10 +17,15 @@ export const instagramConfig = {
   sessionCookie: 'sessionid',
 
   /**
-   * URL substrings whose JSON responses carry post data (profile timeline
-   * GraphQL queries and the REST feed endpoint).
+   * URL substrings whose JSON responses carry post or profile data: profile
+   * timeline GraphQL queries, the REST feed endpoint, and the profile-info
+   * endpoint (which carries follower/following counts).
    */
-  apiResponsePatterns: ['/graphql/query', '/api/v1/feed/user/'],
+  apiResponsePatterns: [
+    '/graphql', // matches both /graphql/query and /api/graphql
+    '/api/v1/feed/user/',
+    '/api/v1/users/web_profile_info/',
+  ],
 
   selectors: {
     /** Initial post data is server-rendered into these blobs. */
