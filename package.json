@@ -15,6 +15,7 @@
     "tracker": "npm run tracker -w @socialscope/collector",
     "migrate": "npm run migrate -w @socialscope/collector",
     "db:status": "npm run db:status -w @socialscope/collector",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev": "npm run dev -w @socialscope/web",
     "build": "npm run build -w @socialscope/web",
