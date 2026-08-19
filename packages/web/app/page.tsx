@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AccountRole } from '@socialscope/shared';
+import type { AccountRole, Platform } from '@socialscope/shared';
 
 import { DashboardPanel } from '@/components/DashboardPanel';
 import { JobLogCard } from '@/components/JobLogCard';
@@ -120,13 +120,13 @@ export default function HomePage() {
   }, []);
 
   const addAccount = useCallback(
-    async (username: string, role: AccountRole) => {
+    async (platform: Platform, username: string, role: AccountRole) => {
       setError(null);
       try {
         const res = await fetch('/api/accounts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ platform: 'instagram', username, role }),
+          body: JSON.stringify({ platform, username, role }),
         });
         const data = (await res.json()) as { error?: string };
         if (!res.ok) {
@@ -186,7 +186,7 @@ export default function HomePage() {
         accounts={accounts}
         busy={busy}
         schemaWarning={schemaWarning}
-        onAdd={(username, role) => void addAccount(username, role)}
+        onAdd={(platform, username, role) => void addAccount(platform, username, role)}
         onRemove={(account) => void removeAccount(account)}
         onScrape={(account) =>
           void startJob('/api/scrape', {
@@ -203,17 +203,12 @@ export default function HomePage() {
         <SessionCard
           sessions={sessions}
           busy={busy}
-          onLogin={() => void startJob('/api/login', { platform: 'instagram' })}
+          onLogin={(platform) => void startJob('/api/login', { platform })}
         />
         <ScrapeCard
           busy={busy}
-          onScrape={(username: string, role: AccountRole, force: boolean) =>
-            void startJob('/api/scrape', {
-              platform: 'instagram',
-              username,
-              role,
-              force,
-            })
+          onScrape={(platform, username, role, force) =>
+            void startJob('/api/scrape', { platform, username, role, force })
           }
         />
       </div>

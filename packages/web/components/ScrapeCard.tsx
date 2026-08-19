@@ -2,14 +2,20 @@
 
 import { useState } from 'react';
 
-import type { AccountRole } from '@socialscope/shared';
+import type { AccountRole, Platform } from '@socialscope/shared';
 
 interface Props {
   busy: boolean;
-  onScrape: (username: string, role: AccountRole, force: boolean) => void;
+  onScrape: (
+    platform: Platform,
+    username: string,
+    role: AccountRole,
+    force: boolean,
+  ) => void;
 }
 
 export function ScrapeCard({ busy, onScrape }: Props) {
+  const [platform, setPlatform] = useState<Platform>('instagram');
   const [username, setUsername] = useState('');
   const [role, setRole] = useState<AccountRole>('me');
   const [force, setForce] = useState(false);
@@ -24,19 +30,33 @@ export function ScrapeCard({ busy, onScrape }: Props) {
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
-          if (canSubmit) onScrape(username, role, force);
+          if (canSubmit) onScrape(platform, username, role, force);
         }}
       >
-        <label className="block space-y-1">
-          <span className="text-sm text-slate-400">Instagram kullanıcı adı</span>
-          <input
-            type="text"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="@hesapadi"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500 focus:outline-none"
-          />
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <span className="text-sm text-slate-400">Platform</span>
+            <select
+              value={platform}
+              onChange={(event) => setPlatform(event.target.value as Platform)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="instagram">Instagram</option>
+              <option value="x">X (Twitter)</option>
+            </select>
+          </label>
+
+          <label className="block space-y-1">
+            <span className="text-sm text-slate-400">Kullanıcı adı</span>
+            <input
+              type="text"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="@hesapadi"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500 focus:outline-none"
+            />
+          </label>
+        </div>
 
         <fieldset className="flex gap-4">
           <legend className="mb-1 text-sm text-slate-400">Hesap rolü</legend>

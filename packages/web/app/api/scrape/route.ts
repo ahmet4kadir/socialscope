@@ -12,15 +12,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     force?: boolean;
   } | null;
 
-  if (body?.platform === 'x') {
-    return NextResponse.json(
-      { error: 'X (Twitter) taraması 3. aşamada geliyor — şimdilik yalnızca Instagram.' },
-      { status: 400 },
-    );
-  }
-  if (body?.platform !== 'instagram') {
+  if (body?.platform !== 'instagram' && body?.platform !== 'x') {
     return NextResponse.json({ error: 'Geçersiz platform.' }, { status: 400 });
   }
+  const platform = body.platform;
 
   const username = body.username?.replace(/^@/, '').trim().toLowerCase() ?? '';
   if (!USERNAME_PATTERN.test(username)) {
@@ -38,7 +33,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const args = [
-    '--platform', 'instagram',
+    '--platform', platform,
     '--user', username,
     '--role', body.role,
   ];

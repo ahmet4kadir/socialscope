@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { AccountRole } from '@socialscope/shared';
+import type { AccountRole, Platform } from '@socialscope/shared';
 
 import type { AccountSummary } from '@/lib/api-types';
 
@@ -10,7 +10,7 @@ interface Props {
   accounts: AccountSummary[] | null;
   busy: boolean;
   schemaWarning: string | null;
-  onAdd: (username: string, role: AccountRole) => void;
+  onAdd: (platform: Platform, username: string, role: AccountRole) => void;
   onRemove: (account: AccountSummary) => void;
   onScrape: (account: AccountSummary) => void;
   onShowPosts: (account: AccountSummary) => void;
@@ -36,6 +36,7 @@ export function DashboardPanel({
   onScrape,
   onShowPosts,
 }: Props) {
+  const [platform, setPlatform] = useState<Platform>('instagram');
   const [username, setUsername] = useState('');
   const [role, setRole] = useState<AccountRole>('competitor');
 
@@ -49,16 +50,24 @@ export function DashboardPanel({
           onSubmit={(event) => {
             event.preventDefault();
             if (username.trim() === '') return;
-            onAdd(username, role);
+            onAdd(platform, username, role);
             setUsername('');
           }}
         >
+          <select
+            value={platform}
+            onChange={(event) => setPlatform(event.target.value as Platform)}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+          >
+            <option value="instagram">Instagram</option>
+            <option value="x">X</option>
+          </select>
           <input
             type="text"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder="@hesap ekle (Instagram)"
-            className="w-44 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500 focus:outline-none"
+            placeholder="@hesap ekle"
+            className="w-40 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-emerald-500 focus:outline-none"
           />
           <select
             value={role}

@@ -13,10 +13,11 @@ import {
 } from '../db/repo';
 import { ScrapeError } from '../scrapers/errors';
 import { InstagramScraper } from '../scrapers/instagram';
+import { XScraper } from '../scrapers/x';
 import { fail } from './common';
 
 const USAGE =
-  'Usage: npm run scrape -- --platform instagram --user <username> [--role me|competitor] [--limit 25] [--force]';
+  'Usage: npm run scrape -- --platform instagram|x --user <username> [--role me|competitor] [--limit 25] [--force]';
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 30;
 
@@ -36,10 +37,7 @@ async function main(): Promise<void> {
     return fail('Unrecognized arguments.', USAGE);
   }
 
-  if (values.platform === 'x') {
-    return fail('The X scraper arrives in stage 3 — only instagram is supported right now.');
-  }
-  if (values.platform !== 'instagram') {
+  if (values.platform !== 'instagram' && values.platform !== 'x') {
     return fail('--platform must be "instagram" or "x".', USAGE);
   }
   const platform = values.platform;
@@ -80,7 +78,8 @@ async function main(): Promise<void> {
     }
 
     console.log(`Scraping ${platform}/@${username} (${role}, up to ${limit} posts)…`);
-    const scraper: DataSource = new InstagramScraper();
+    const scraper: DataSource =
+      platform === 'instagram' ? new InstagramScraper() : new XScraper();
     const posts = await scraper.fetchPosts(username, limit);
 
     const result = saveScrapedPosts(db, { platform, username, role }, posts);

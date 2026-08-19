@@ -2,14 +2,39 @@ import { parseArgs } from 'node:util';
 
 import type { Browser, BrowserContext } from 'playwright';
 
+import type { Platform } from '@socialscope/shared';
+
 import { launchContext } from '../browser/launch';
 import { saveSession } from '../browser/session';
 import { instagramConfig } from '../config/instagram';
+import { xConfig } from '../config/x';
 import { fail } from './common';
 
-const USAGE = 'Usage: npm run login -- --platform instagram';
+const USAGE = 'Usage: npm run login -- --platform instagram|x';
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
 const POLL_MS = 2000;
+
+interface LoginTarget {
+  label: string;
+  loginUrl: string;
+  home: string;
+  cookie: string;
+}
+
+const LOGIN_TARGETS: Record<Platform, LoginTarget> = {
+  instagram: {
+    label: 'Instagram',
+    loginUrl: instagramConfig.urls.login,
+    home: instagramConfig.urls.home,
+    cookie: instagramConfig.sessionCookie,
+  },
+  x: {
+    label: 'X (Twitter)',
+    loginUrl: xConfig.urls.login,
+    home: xConfig.urls.home,
+    cookie: xConfig.sessionCookie,
+  },
+};
 
 async function main(): Promise<void> {
   let platform: string | undefined;
@@ -21,14 +46,12 @@ async function main(): Promise<void> {
     fail('Unrecognized arguments.', USAGE);
   }
 
-  if (platform === 'x') {
-    fail('X login arrives in stage 3 — only instagram is supported right now.');
+  if (platform !== 'instagram' && platform !== 'x') {
+    return fail('--platform must be "instagram" or "x".', USAGE);
   }
-  if (platform !== 'instagram') {
-    fail('--platform must be "instagram" or "x".', USAGE);
-  }
+  const target = LOGIN_TARGETS[platform];
 
-  console.log('Opening a browser window — log in to Instagram manually.');
+  console.log(`Opening a browser window — log in to ${target.label} manually.`);
   console.log('(2FA is fine. The session is saved automatically on success;');
   console.log(` you have ${LOGIN_TIMEOUT_MS / 60000} minutes.)`);
 
@@ -47,7 +70,7 @@ async function main(): Promise<void> {
   // Slow or stalled loads are fine — the poll loop below only needs cookies,
   // and the user can keep interacting with the page regardless.
   await page
-    .goto(instagramConfig.urls.login, { waitUntil: 'domcontentloaded' })
+    .goto(target.loginUrl, { waitUntil: 'domcontentloaded' })
     .catch(() => {});
 
   const deadline = Date.now() + LOGIN_TIMEOUT_MS;
@@ -56,19 +79,21 @@ async function main(): Promise<void> {
 
     let loggedIn: boolean;
     try {
-      const cookies = await context.cookies(instagramConfig.urls.home);
+      const cookies = await context.cookies(target.home);
       loggedIn = cookies.some(
-        (cookie) => cookie.name === instagramConfig.sessionCookie && cookie.value !== '',
+        (cookie) => cookie.name === target.cookie && cookie.value !== '',
       );
     } catch {
       fail('The browser window was closed before login completed. Run the command again.');
     }
 
     if (loggedIn) {
-      const file = await saveSession(context, 'instagram');
+      const file = await saveSession(context, platform);
       await browser.close();
       console.log(`\n[ok] Logged in — session saved to ${file}`);
-      console.log('     Next: npm run scrape -- --platform instagram --user <your_username> --role me');
+      console.log(
+        `     Next: npm run scrape -- --platform ${platform} --user <your_username> --role me`,
+      );
       return;
     }
   }

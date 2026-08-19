@@ -7,17 +7,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     platform?: string;
   } | null;
 
-  if (body?.platform === 'x') {
-    return NextResponse.json(
-      { error: 'X (Twitter) girişi 3. aşamada geliyor — şimdilik yalnızca Instagram.' },
-      { status: 400 },
-    );
-  }
-  if (body?.platform !== 'instagram') {
+  if (body?.platform !== 'instagram' && body?.platform !== 'x') {
     return NextResponse.json({ error: 'Geçersiz platform.' }, { status: 400 });
   }
+  const platform = body.platform;
 
-  const result = startJob('login', 'Instagram girişi', ['--platform', 'instagram']);
+  const result = startJob(
+    'login',
+    platform === 'x' ? 'X (Twitter) girişi' : 'Instagram girişi',
+    ['--platform', platform],
+  );
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: 409 });
   }

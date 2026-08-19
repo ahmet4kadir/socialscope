@@ -136,6 +136,37 @@ export abstract class PlaywrightScraper implements DataSource {
     }
   }
 
+  /**
+   * Shared login-wall detector: throws (with a debug dump) when the platform
+   * redirected to a login/challenge path or is showing its login form.
+   * Prefixes are matched against whole path segments so usernames that merely
+   * start with a blocked word don't false-positive.
+   */
+  protected async assertNoLoginWall(
+    page: Page,
+    blockedPathPrefixes: readonly string[],
+    loginFormSelector: string,
+  ): Promise<void> {
+    const { pathname } = new URL(page.url());
+    const blocked = blockedPathPrefixes.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
+    const loginFormVisible = await page
+      .locator(loginFormSelector)
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (blocked || loginFormVisible) {
+      const dump = await dumpDebug(page, this.platform, 'login-wall');
+      throw new ScrapeError(
+        `${this.platform} is showing the login/challenge page — the saved session is missing, expired, or flagged.`,
+        `Run \`npm run login -- --platform ${this.platform}\` to refresh the session.` +
+          (dump ? ` Screenshot + HTML saved to ${dump}.*` : ''),
+      );
+    }
+  }
+
   private async harvestResponse(
     response: Response,
     username: string,
