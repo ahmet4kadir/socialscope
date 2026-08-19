@@ -11,6 +11,8 @@
   "scripts": {
     "login": "npm run login -w @socialscope/collector --",
     "scrape": "npm run scrape -w @socialscope/collector --",
+    "track": "npm run track -w @socialscope/collector --",
+    "tracker": "npm run tracker -w @socialscope/collector",
     "migrate": "npm run migrate -w @socialscope/collector",
     "db:status": "npm run db:status -w @socialscope/collector",
     "typecheck": "npm run typecheck --workspaces --if-present",

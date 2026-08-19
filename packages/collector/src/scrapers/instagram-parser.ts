@@ -31,12 +31,12 @@ function looksLikeMedia(obj: Json): boolean {
 
 /**
  * Extracts every Instagram post found anywhere in a JSON payload, normalized
- * and filtered to the expected account. Pure function — unit-testable with
- * fixture payloads.
+ * and (when a username is given) filtered to that account. Pure function —
+ * unit-testable with fixture payloads.
  */
 export function extractInstagramPosts(
   payload: unknown,
-  expectedUsername: string,
+  expectedUsername: string | null,
 ): NormalizedPost[] {
   const found = new Map<string, NormalizedPost>();
   walk(payload, 0, (media) => {
@@ -64,11 +64,17 @@ function walk(value: unknown, depth: number, onMedia: (m: Json) => void): void {
 
 function toNormalizedPost(
   media: Json,
-  expectedUsername: string,
+  expectedUsername: string | null,
 ): NormalizedPost | null {
   const code = media.code as string;
   const username = readUsername(media) ?? expectedUsername;
-  if (username.toLowerCase() !== expectedUsername.toLowerCase()) return null;
+  if (username === null) return null;
+  if (
+    expectedUsername !== null &&
+    username.toLowerCase() !== expectedUsername.toLowerCase()
+  ) {
+    return null;
+  }
 
   const caption = readCaption(media);
   const productType = typeof media.product_type === 'string' ? media.product_type : '';

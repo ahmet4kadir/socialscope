@@ -32,7 +32,7 @@ function looksLikeTweetResult(obj: Json): boolean {
  */
 export function extractXPosts(
   payload: unknown,
-  expectedUsername: string,
+  expectedUsername: string | null,
 ): NormalizedPost[] {
   const found = new Map<string, NormalizedPost>();
   walk(payload, 0, (result) => {
@@ -60,7 +60,7 @@ function walk(value: unknown, depth: number, onTweet: (t: Json) => void): void {
 
 function toNormalizedPost(
   result: Json,
-  expectedUsername: string,
+  expectedUsername: string | null,
 ): NormalizedPost | null {
   const legacy = result.legacy as Json;
 
@@ -68,7 +68,13 @@ function toNormalizedPost(
   if (legacy.retweeted_status_result !== undefined) return null;
 
   const username = readScreenName(result) ?? expectedUsername;
-  if (username.toLowerCase() !== expectedUsername.toLowerCase()) return null;
+  if (username === null) return null;
+  if (
+    expectedUsername !== null &&
+    username.toLowerCase() !== expectedUsername.toLowerCase()
+  ) {
+    return null;
+  }
 
   // created_at format: "Wed Oct 10 20:19:24 +0000 2018"
   const date = new Date(legacy.created_at as string);

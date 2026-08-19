@@ -2,7 +2,7 @@ import type { AccountRole, MediaType, Platform } from '@socialscope/shared';
 
 // Shapes exchanged between the API routes and the client components.
 
-export type JobKind = 'login' | 'scrape';
+export type JobKind = 'login' | 'scrape' | 'track';
 export type JobStatus = 'running' | 'succeeded' | 'failed';
 
 export interface JobView {
@@ -47,4 +47,6 @@ export interface PostWithMetrics {
   shares: number | null;
   views: number | null;
   capturedAt: string;
+  /** null = never tracked; 'active' = being tracked; 'stopped' = 48h window over. */
+  tracking: 'active' | 'stopped' | null;
 }

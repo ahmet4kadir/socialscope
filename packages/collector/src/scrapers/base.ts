@@ -34,20 +34,83 @@ export abstract class PlaywrightScraper implements DataSource {
   protected abstract readonly apiResponsePatterns: readonly string[];
 
   protected abstract profileUrl(username: string): string;
-  /** Extracts normalized posts from one JSON payload (pure, unit-testable). */
+  /**
+   * Extracts normalized posts from one JSON payload (pure, unit-testable).
+   * A null usernameFilter accepts posts from any author.
+   */
   protected abstract extractPosts(
     payload: unknown,
-    username: string,
+    usernameFilter: string | null,
   ): NormalizedPost[];
   /** Harvests posts embedded in the initial HTML (inline JSON script tags). */
   protected abstract extractInlinePosts(
     page: Page,
-    username: string,
+    usernameFilter: string | null,
   ): Promise<NormalizedPost[]>;
   /** Throws a ScrapeError if the page shows a login wall or challenge. */
   protected abstract assertPageUsable(page: Page): Promise<void>;
 
+  /** The most recent `limit` posts of an account's profile. */
   async fetchPosts(username: string, limit: number): Promise<NormalizedPost[]> {
+    const harvested = await this.collectFromPage(
+      this.profileUrl(username),
+      username,
+      limit,
+      async (found, page) => {
+        if (found.size > 0) return;
+        const dump = await dumpDebug(page, this.platform, 'no-posts');
+        throw new ScrapeError(
+          `Captured 0 posts from ${this.platform}/@${username}.`,
+          `Possible causes: the account is private or has no posts, or ${this.platform} changed its page structure ` +
+            `(fix patterns in src/config/${this.platform}.ts).` +
+            (dump ? ` Screenshot + HTML saved to ${dump}.*` : ''),
+        );
+      },
+    );
+
+    return [...harvested.values()]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, limit);
+  }
+
+  /** One specific post by URL — used by the tracker for snapshot refreshes. */
+  async fetchPost(url: string): Promise<NormalizedPost> {
+    const id = derivePostId(this.platform, url);
+    if (!id) {
+      throw new ScrapeError(`Unrecognized ${this.platform} post URL: ${url}`);
+    }
+
+    const harvested = await this.collectFromPage(url, null, 0, async (found, page) => {
+      if (found.has(id)) return;
+      const dump = await dumpDebug(page, this.platform, 'post-not-found');
+      throw new ScrapeError(
+        `Could not extract post data from ${url}.`,
+        `The post may be deleted/private, or ${this.platform} changed its page structure ` +
+          `(fix patterns in src/config/${this.platform}.ts).` +
+          (dump ? ` Screenshot + HTML saved to ${dump}.*` : ''),
+      );
+    });
+
+    const post = harvested.get(id);
+    if (!post) throw new ScrapeError(`Post ${id} vanished during harvesting.`);
+    return post;
+  }
+
+  /**
+   * Opens one page under the global scrape lock, harvests posts from inline
+   * JSON + captured API responses (scrolling until `scrollTarget` posts or
+   * the feed stops growing), runs `validate` while the page is still alive,
+   * and tears everything down.
+   */
+  private async collectFromPage(
+    targetUrl: string,
+    usernameFilter: string | null,
+    scrollTarget: number,
+    validate: (
+      harvested: Map<string, NormalizedPost>,
+      page: Page,
+    ) => Promise<void>,
+  ): Promise<Map<string, NormalizedPost>> {
     const releaseLock = acquireScrapeLock();
     let browser: Browser | undefined;
     try {
@@ -77,8 +140,8 @@ export abstract class PlaywrightScraper implements DataSource {
       page.setDefaultNavigationTimeout(this.timing.navigationTimeoutMs);
 
       // Posts arrive from two directions: JSON embedded in the initial HTML
-      // and XHR/GraphQL responses fired while scrolling. Both feed the same
-      // parser; the map dedupes by stable post id.
+      // and XHR/GraphQL responses fired on load and while scrolling. Both
+      // feed the same parser; the map dedupes by stable post id.
       const harvested = new Map<string, NormalizedPost>();
       const collect = (posts: NormalizedPost[]): void => {
         for (const post of posts) {
@@ -86,45 +149,35 @@ export abstract class PlaywrightScraper implements DataSource {
         }
       };
       page.on('response', (response) => {
-        void this.harvestResponse(response, username, collect);
+        void this.harvestResponse(response, usernameFilter, collect);
       });
 
       try {
-        await page.goto(this.profileUrl(username), {
-          waitUntil: 'domcontentloaded',
-        });
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
         await humanDelay(this.timing.actionDelayMs);
         await this.assertPageUsable(page);
-        collect(await this.extractInlinePosts(page, username));
+        collect(await this.extractInlinePosts(page, usernameFilter));
 
         let staleRounds = 0;
-        while (harvested.size < limit && staleRounds < this.timing.maxStaleScrolls) {
+        while (
+          harvested.size < scrollTarget &&
+          staleRounds < this.timing.maxStaleScrolls
+        ) {
           const before = harvested.size;
           await humanScroll(page);
           await humanDelay(this.timing.actionDelayMs);
           staleRounds = harvested.size === before ? staleRounds + 1 : 0;
         }
 
-        if (harvested.size === 0) {
-          const dump = await dumpDebug(page, this.platform, 'no-posts');
-          throw new ScrapeError(
-            `Captured 0 posts from ${this.platform}/@${username}.`,
-            `Possible causes: the account is private or has no posts, or ${this.platform} changed its page structure ` +
-              `(fix patterns in src/config/${this.platform}.ts).` +
-              (dump ? ` Screenshot + HTML saved to ${dump}.*` : ''),
-          );
-        }
-
-        return [...harvested.values()]
-          .sort((a, b) => b.date.localeCompare(a.date))
-          .slice(0, limit);
+        await validate(harvested, page);
+        return harvested;
       } catch (error) {
         if (error instanceof ScrapeError) throw error;
         // Dump while the page is still alive — the finally below destroys it.
         const dump = await dumpDebug(page, this.platform, 'unexpected');
         const message = error instanceof Error ? error.message : String(error);
         throw new ScrapeError(
-          `Unexpected failure while scraping ${this.platform}/@${username}: ${message}`,
+          `Unexpected failure while scraping ${targetUrl}: ${message}`,
           dump
             ? `Screenshot + HTML saved to ${dump}.*`
             : 'No debug dump could be captured (the page was already gone).',
@@ -169,7 +222,7 @@ export abstract class PlaywrightScraper implements DataSource {
 
   private async harvestResponse(
     response: Response,
-    username: string,
+    usernameFilter: string | null,
     collect: (posts: NormalizedPost[]) => void,
   ): Promise<void> {
     try {
@@ -179,7 +232,7 @@ export abstract class PlaywrightScraper implements DataSource {
       }
       const contentType = response.headers()['content-type'] ?? '';
       if (!contentType.includes('json')) return;
-      collect(this.extractPosts(await response.json(), username));
+      collect(this.extractPosts(await response.json(), usernameFilter));
     } catch {
       // Non-JSON body or a teardown race — either way, not a post payload.
     }

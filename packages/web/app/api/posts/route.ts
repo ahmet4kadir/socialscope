@@ -18,6 +18,8 @@ interface PostRowWithSnapshot {
   shares: number | null;
   views: number | null;
   captured_at: string;
+  tracked_active: 0 | 1 | null;
+  auto_stop_at: string | null;
 }
 
 export function GET(request: Request): NextResponse {
@@ -41,11 +43,13 @@ export function GET(request: Request): NextResponse {
   const rows = db
     .prepare(
       `SELECT p.id, p.posted_at, p.content_text, p.media_type, p.hashtags_json, p.url,
-              p.thumbnail_url, s.likes, s.comments, s.shares, s.views, s.captured_at
+              p.thumbnail_url, s.likes, s.comments, s.shares, s.views, s.captured_at,
+              tp.active AS tracked_active, tp.auto_stop_at
        FROM posts p
        JOIN snapshots s
          ON s.post_id = p.id
         AND s.captured_at = (SELECT MAX(captured_at) FROM snapshots WHERE post_id = p.id)
+       LEFT JOIN tracked_posts tp ON tp.post_id = p.id
        WHERE p.platform = ? AND p.username = ?
        ORDER BY p.posted_at DESC`,
     )
@@ -72,6 +76,13 @@ export function GET(request: Request): NextResponse {
       shares: row.shares,
       views: row.views,
       capturedAt: row.captured_at,
+      tracking:
+        row.tracked_active === null
+          ? null
+          : row.tracked_active === 1 &&
+              (row.auto_stop_at ?? '') > new Date().toISOString()
+            ? 'active'
+            : 'stopped',
     };
   });
   return NextResponse.json({ posts });

@@ -5,9 +5,9 @@ competitor accounts (Instagram / X), tracks new posts' performance with hourly
 snapshots, computes engagement metrics, and uses Claude to generate
 competitor comparisons and actionable recommendations.
 
-> **Status: work in progress.** Stage 3 of 10 (Instagram + X scrapers, web
-> control panel). The full README — architecture diagram, setup workflow,
-> screenshots, data model — lands with the final stage.
+> **Status: work in progress.** Stage 4 of 10 (scrapers, control panel,
+> time-series tracker). The full README — architecture diagram, setup
+> workflow, screenshots, data model — lands with the final stage.
 >
 > Scraping is for educational/analysis purposes: use a throwaway account at
 > low volume.
@@ -45,6 +45,21 @@ Everything else happens in the control panel (Turkish UI):
 CLI equivalents exist for scripting: `npm run login -- --platform instagram|x`,
 `npm run scrape -- --platform instagram|x --user <account> --role me`, and
 `npm run db:status`.
+
+### Time-series tracking
+
+```
+npm run tracker                       # long-running local process (node-cron)
+npm run track -- --url <post_url>     # manually enroll any post
+```
+
+The tracker sweeps every registered account every 6h and auto-enrolls fresh
+posts (&lt;48h old) on your own accounts. Each tracked post gets hourly
+snapshots (±10 min jitter) for its first 24h of tracking, then 6-hourly
+snapshots, stopping automatically at 48h. Posts can also be enrolled from the
+dashboard ("Takibe Al" on any post) — the tracker process must be running for
+the schedule to execute. Platforms without a saved session are skipped
+gracefully.
 
 Scrapes are throttled by design: max 30 posts per account, 2-6s human-like
 delays, one scrape session at a time (also enforced across the web UI and

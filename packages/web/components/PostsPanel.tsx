@@ -5,6 +5,8 @@ import type { PostWithMetrics } from '@/lib/api-types';
 interface Props {
   account: { platform: string; username: string };
   posts: PostWithMetrics[] | null;
+  busy: boolean;
+  onTrack: (post: PostWithMetrics) => void;
 }
 
 const MEDIA_LABELS: Record<string, string> = {
@@ -26,7 +28,7 @@ function formatCount(value: number | null): string {
   return value === null ? '—' : value.toLocaleString('tr-TR');
 }
 
-export function PostsPanel({ account, posts }: Props) {
+export function PostsPanel({ account, posts, busy, onTrack }: Props) {
   return (
     <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900 p-5">
       <h2 className="text-lg font-semibold">@{account.username} gönderileri</h2>
@@ -49,6 +51,7 @@ export function PostsPanel({ account, posts }: Props) {
                 <th className="py-2 pr-4">Yorum</th>
                 <th className="py-2 pr-4">Görüntülenme</th>
                 <th className="py-2 pr-4">İçerik</th>
+                <th className="py-2 pr-4">Takip</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -89,6 +92,26 @@ export function PostsPanel({ account, posts }: Props) {
                     <span className="line-clamp-2">
                       {post.contentText || <em className="text-slate-600">açıklama yok</em>}
                     </span>
+                  </td>
+                  <td className="whitespace-nowrap py-2 pr-4">
+                    {post.tracking === 'active' ? (
+                      <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                        Takipte
+                      </span>
+                    ) : post.tracking === 'stopped' ? (
+                      <span className="rounded-full bg-slate-700/40 px-2.5 py-0.5 text-xs font-medium text-slate-400">
+                        Takip bitti
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onTrack(post)}
+                        disabled={busy}
+                        className="rounded-md border border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Takibe Al
+                      </button>
+                    )}
                   </td>
                   <td className="whitespace-nowrap py-2 text-right">
                     <a

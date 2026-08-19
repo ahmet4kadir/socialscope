@@ -3,9 +3,12 @@ import type { Database } from 'better-sqlite3';
 import {
   derivePostId,
   type AccountRole,
+  type AccountRow,
   type NormalizedPost,
   type Platform,
 } from '@socialscope/shared';
+
+import { autoStopAt } from '../tracking/schedule';
 
 export interface ScrapedAccount {
   platform: Platform;
@@ -17,6 +20,8 @@ export interface SaveResult {
   saved: number;
   /** Posts whose URL didn't yield a stable id (malformed scrape data). */
   skipped: number;
+  /** Ids that were first seen in this save (candidates for auto-tracking). */
+  newPostIds: string[];
   snapshotAt: string;
 }
 
@@ -64,9 +69,11 @@ export function saveScrapedPosts(
   const alignRole = db.prepare(
     'UPDATE posts SET role = ? WHERE platform = ? AND username = ?',
   );
+  const postExists = db.prepare('SELECT 1 FROM posts WHERE id = ?');
 
   let saved = 0;
   let skipped = 0;
+  const newPostIds: string[] = [];
   db.transaction(() => {
     upsertAccount(db, account);
     alignRole.run(role, account.platform, account.username);
@@ -76,6 +83,7 @@ export function saveScrapedPosts(
         skipped += 1;
         continue;
       }
+      if (postExists.get(id) === undefined) newPostIds.push(id);
       upsertPost.run({
         id,
         platform: post.platform,
@@ -100,7 +108,20 @@ export function saveScrapedPosts(
     }
   })();
 
-  return { saved, skipped, snapshotAt };
+  return { saved, skipped, newPostIds, snapshotAt };
+}
+
+/** One extra time-series observation for an already-known post. */
+export function insertSnapshot(
+  db: Database,
+  postId: string,
+  post: NormalizedPost,
+  capturedAt = new Date().toISOString(),
+): void {
+  db.prepare(
+    `INSERT OR REPLACE INTO snapshots (post_id, captured_at, likes, comments, shares, views)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(postId, capturedAt, post.likes, post.comments, post.shares ?? null, post.views ?? null);
 }
 
 /** Role this account is registered with, if it's in the registry. */
@@ -137,6 +158,87 @@ export function recordSweep(
   db.prepare(
     'INSERT OR REPLACE INTO sweeps (platform, username, swept_at) VALUES (?, ?, ?)',
   ).run(platform, username, sweptAt);
+}
+
+/** All registered accounts (dashboard cards + the tracker's sweep list). */
+export function listAccounts(db: Database): AccountRow[] {
+  return db
+    .prepare('SELECT platform, username, role, added_at FROM accounts ORDER BY platform, username')
+    .all() as AccountRow[];
+}
+
+// ---------------------------------------------------------------------------
+// Tracking
+// ---------------------------------------------------------------------------
+
+export interface ActiveTrackedPost {
+  post_id: string;
+  tracking_started_at: string;
+  auto_stop_at: string;
+  platform: Platform;
+  username: string;
+  url: string;
+  posted_at: string;
+}
+
+/**
+ * Enrolls (or re-enrolls) a post in time-series tracking. Re-enrolling an
+ * expired post restarts its 48h window; an actively tracked post is left
+ * untouched by callers (check isActivelyTracked first).
+ */
+export function enrollTracking(
+  db: Database,
+  postId: string,
+  startedAt = new Date().toISOString(),
+): { autoStopAt: string } {
+  const stopAt = autoStopAt(startedAt);
+  db.prepare(
+    `INSERT INTO tracked_posts (post_id, tracking_started_at, auto_stop_at, active)
+     VALUES (?, ?, ?, 1)
+     ON CONFLICT (post_id) DO UPDATE SET
+       tracking_started_at = excluded.tracking_started_at,
+       auto_stop_at = excluded.auto_stop_at,
+       active = 1`,
+  ).run(postId, startedAt, stopAt);
+  return { autoStopAt: stopAt };
+}
+
+export function isActivelyTracked(db: Database, postId: string, now = new Date().toISOString()): boolean {
+  return (
+    db
+      .prepare('SELECT 1 FROM tracked_posts WHERE post_id = ? AND active = 1 AND auto_stop_at > ?')
+      .get(postId, now) !== undefined
+  );
+}
+
+/** Flips expired rows to inactive; returns how many were stopped. */
+export function deactivateExpired(db: Database, now = new Date().toISOString()): number {
+  return db
+    .prepare('UPDATE tracked_posts SET active = 0 WHERE active = 1 AND auto_stop_at <= ?')
+    .run(now).changes;
+}
+
+export function getActiveTrackedPosts(
+  db: Database,
+  now = new Date().toISOString(),
+): ActiveTrackedPost[] {
+  return db
+    .prepare(
+      `SELECT tp.post_id, tp.tracking_started_at, tp.auto_stop_at,
+              p.platform, p.username, p.url, p.posted_at
+       FROM tracked_posts tp
+       JOIN posts p ON p.id = tp.post_id
+       WHERE tp.active = 1 AND tp.auto_stop_at > ?
+       ORDER BY tp.tracking_started_at`,
+    )
+    .all(now) as ActiveTrackedPost[];
+}
+
+export function lastSnapshotAt(db: Database, postId: string): string | null {
+  const row = db
+    .prepare('SELECT MAX(captured_at) AS at FROM snapshots WHERE post_id = ?')
+    .get(postId) as { at: string | null };
+  return row.at;
 }
 
 export const SWEEP_CACHE_MS = 6 * 60 * 60 * 1000;

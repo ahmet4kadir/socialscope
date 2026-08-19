@@ -6,6 +6,8 @@
   "scripts": {
     "login": "tsx src/cli/login.ts",
     "scrape": "tsx src/cli/scrape.ts",
+    "track": "tsx src/cli/track.ts",
+    "tracker": "tsx src/cli/tracker.ts",
     "migrate": "tsx src/db/migrate.ts",
     "db:status": "tsx src/db/status.ts",
     "typecheck": "tsc --noEmit"
@@ -13,6 +15,7 @@
   "dependencies": {
     "@socialscope/shared": "*",
     "better-sqlite3": "^11.10.0",
+    "node-cron": "^4.6.0",
     "playwright": "^1.50.0"
   },
   "devDependencies": {

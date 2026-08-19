@@ -12,8 +12,7 @@ import {
   saveScrapedPosts,
 } from '../db/repo';
 import { ScrapeError } from '../scrapers/errors';
-import { InstagramScraper } from '../scrapers/instagram';
-import { XScraper } from '../scrapers/x';
+import { scraperFor } from '../scrapers/factory';
 import { fail } from './common';
 
 const USAGE =
@@ -78,8 +77,7 @@ async function main(): Promise<void> {
     }
 
     console.log(`Scraping ${platform}/@${username} (${role}, up to ${limit} posts)…`);
-    const scraper: DataSource =
-      platform === 'instagram' ? new InstagramScraper() : new XScraper();
+    const scraper: DataSource = scraperFor(platform);
     const posts = await scraper.fetchPosts(username, limit);
 
     const result = saveScrapedPosts(db, { platform, username, role }, posts);

@@ -16,13 +16,16 @@ export class InstagramScraper extends PlaywrightScraper {
     return instagramConfig.urls.profile(username);
   }
 
-  protected extractPosts(payload: unknown, username: string): NormalizedPost[] {
-    return extractInstagramPosts(payload, username);
+  protected extractPosts(
+    payload: unknown,
+    usernameFilter: string | null,
+  ): NormalizedPost[] {
+    return extractInstagramPosts(payload, usernameFilter);
   }
 
   protected async extractInlinePosts(
     page: Page,
-    username: string,
+    usernameFilter: string | null,
   ): Promise<NormalizedPost[]> {
     const blobs = await page
       .$$eval(instagramConfig.selectors.inlineDataScript, (scripts) =>
@@ -33,7 +36,7 @@ export class InstagramScraper extends PlaywrightScraper {
     const posts: NormalizedPost[] = [];
     for (const blob of blobs) {
       try {
-        posts.push(...extractInstagramPosts(JSON.parse(blob), username));
+        posts.push(...extractInstagramPosts(JSON.parse(blob), usernameFilter));
       } catch {
         // Not JSON we care about.
       }

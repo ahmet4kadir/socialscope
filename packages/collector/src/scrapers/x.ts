@@ -16,8 +16,11 @@ export class XScraper extends PlaywrightScraper {
     return xConfig.urls.profile(username);
   }
 
-  protected extractPosts(payload: unknown, username: string): NormalizedPost[] {
-    return extractXPosts(payload, username);
+  protected extractPosts(
+    payload: unknown,
+    usernameFilter: string | null,
+  ): NormalizedPost[] {
+    return extractXPosts(payload, usernameFilter);
   }
 
   protected extractInlinePosts(): Promise<NormalizedPost[]> {

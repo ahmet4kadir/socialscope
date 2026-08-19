@@ -215,7 +215,14 @@ export default function HomePage() {
 
       {job && <JobLogCard job={job} />}
 
-      {selected && <PostsPanel account={selected} posts={posts} />}
+      {selected && (
+        <PostsPanel
+          account={selected}
+          posts={posts}
+          busy={busy}
+          onTrack={(post) => void startJob('/api/track', { url: post.url })}
+        />
+      )}
     </main>
   );
 }
