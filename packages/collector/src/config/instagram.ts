@@ -35,6 +35,15 @@ export const instagramConfig = {
   },
 
   /**
+   * Cookie-consent modal that blocks content until dismissed (appears when
+   * the session's stored consent choice didn't travel with it, e.g. on a
+   * server in another region). We decline optional cookies to keep only the
+   * essential ones. Button label matched case-insensitively; the locale is
+   * forced to en-US in the browser context.
+   */
+  cookieDeclineButton: /decline optional cookies|only allow essential cookies/i,
+
+  /**
    * URL path prefixes meaning Instagram is refusing the session. Matched
    * against whole path segments so usernames like "challengemtv" don't
    * false-positive.

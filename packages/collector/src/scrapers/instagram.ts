@@ -78,4 +78,20 @@ export class InstagramScraper extends PlaywrightScraper {
       instagramConfig.selectors.loginForm,
     );
   }
+
+  protected override async dismissInterstitials(page: Page): Promise<void> {
+    // The consent modal lives in a dialog; decline optional cookies so only
+    // essential ones remain, then let the content load.
+    const decline = page
+      .getByRole('button', { name: instagramConfig.cookieDeclineButton })
+      .first();
+    try {
+      if (await decline.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await decline.click();
+        await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      }
+    } catch {
+      // No consent modal, or it vanished on its own — nothing to do.
+    }
+  }
 }

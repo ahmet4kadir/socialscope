@@ -187,6 +187,7 @@ export abstract class PlaywrightScraper implements DataSource {
       try {
         await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
         await humanDelay(this.timing.actionDelayMs);
+        await this.dismissInterstitials(page);
         await this.assertPageUsable(page);
         collect(await this.extractInlinePosts(page, usernameFilter));
 
@@ -266,6 +267,15 @@ export abstract class PlaywrightScraper implements DataSource {
     _username: string,
   ): Promise<AccountInfo | null> {
     return Promise.resolve(null);
+  }
+
+  /**
+   * Dismiss consent modals / interstitials that block content. Default:
+   * nothing. Runs after load, before the login-wall check. Must never throw
+   * (a missing modal is the normal case).
+   */
+  protected dismissInterstitials(_page: Page): Promise<void> {
+    return Promise.resolve();
   }
 
   private async harvestResponse(

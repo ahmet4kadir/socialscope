@@ -4,8 +4,9 @@ node_modules/
 # Local data: SQLite database (+ WAL/SHM sidecars)
 data/
 
-# Scraper debug dumps (screenshots + HTML on selector failure)
-debug/
+# Scraper debug dumps (screenshots + HTML on selector failure).
+# Anchored to the repo root so it doesn't also match app/api/debug/.
+/debug/
 
 # Logged-in browser sessions (cookies) — never commit these
 .sessions/

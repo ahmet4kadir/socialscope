@@ -2,9 +2,9 @@ node_modules
 packages/*/node_modules
 .next
 packages/web/.next
-data
-.sessions
-debug
+/data
+/.sessions
+/debug
 .git
 .claude
 .env
