@@ -7,6 +7,7 @@ import type { AccountRole, Platform } from '@socialscope/shared';
 import { AnalysisPanel } from '@/components/AnalysisPanel';
 import { CampaignsPanel } from '@/components/CampaignsPanel';
 import { ComparisonPanel } from '@/components/ComparisonPanel';
+import { DebugCard } from '@/components/DebugCard';
 import { DashboardPanel } from '@/components/DashboardPanel';
 import { GoalsPanel } from '@/components/GoalsPanel';
 import { PlannerPanel } from '@/components/PlannerPanel';
@@ -320,6 +321,10 @@ export default function HomePage() {
       </div>
 
       {job && <JobLogCard job={job} technical={technical} />}
+
+      {technical && tab === 'panel' && (
+        <DebugCard refreshKey={`${job?.id ?? ''}:${job?.finishedAt ?? ''}`} />
+      )}
 
       {selected && (
         <PostsPanel

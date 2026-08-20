@@ -32,6 +32,7 @@ function findRepoRoot(startDir: string): string {
 export const REPO_ROOT = findRepoRoot(process.cwd());
 export const COLLECTOR_DIR = path.join(REPO_ROOT, 'packages', 'collector');
 export const SESSIONS_DIR = path.join(REPO_ROOT, '.sessions');
+export const DEBUG_DIR = path.join(REPO_ROOT, 'debug');
 
 // Mirrors collector/src/paths.ts: load the repo-root .env once, BOM-tolerant,
 // shell environment wins. (Next.js only auto-loads packages/web/.env.)
