@@ -45,6 +45,8 @@ export interface AccountSummary {
   following: number | null;
   /** Follower change since the previous account snapshot; null if <2 snapshots. */
   followerGrowth: number | null;
+  /** The profile's real total post count, if captured. */
+  profilePostCount: number | null;
 }
 
 export interface PostWithMetrics {

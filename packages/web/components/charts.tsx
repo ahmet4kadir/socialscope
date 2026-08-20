@@ -5,6 +5,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -114,6 +115,11 @@ export function HorizontalBarChart({
 
 const NEUTRAL = '#64748b'; // slate-500 — competitor bars
 
+// Validated categorical order for multi-series overlays (dark surface;
+// dataviz validator: lightness band, chroma, CVD separation, contrast all
+// pass). Assigned in fixed order, never cycled per-render.
+export const CATEGORICAL = ['#059669', '#0284c7', '#d97706', '#8b5cf6', '#ec4899'];
+
 interface EmphasisValue {
   name: string;
   value: number;
@@ -201,6 +207,96 @@ export function FollowerChart({ points }: { points: FollowerPoint[] }) {
           dot={{ r: 3, fill: ACCENT, strokeWidth: 0 }}
           activeDot={{ r: 5 }}
         />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+interface CurvePointInput {
+  hours: number;
+  engagement: number;
+}
+
+/** One tracked post's cumulative engagement over hours since posting. */
+export function GrowthCurveChart({ points }: { points: CurvePointInput[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <LineChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          type="number"
+          dataKey="hours"
+          tick={AXIS_TICK}
+          tickLine={false}
+          axisLine={{ stroke: GRID }}
+          tickFormatter={(h: number) => `${Math.round(h)}s`}
+          domain={[0, 'dataMax']}
+        />
+        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={formatTick} />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          labelFormatter={(h) => `${Math.round(Number(h))}. saat`}
+          formatter={(value) => [formatTooltipValue(value), 'Etkileşim']}
+        />
+        <Line
+          type="monotone"
+          dataKey="engagement"
+          stroke={ACCENT}
+          strokeWidth={2}
+          dot={{ r: 3, fill: ACCENT, strokeWidth: 0 }}
+          activeDot={{ r: 5 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+export interface OverlaySeries {
+  name: string;
+  points: CurvePointInput[];
+}
+
+/**
+ * First-24h overlay: each tracked post's engagement curve on a shared
+ * hours-since-posting axis. Multiple series → validated categorical palette
+ * in fixed order + a legend.
+ */
+export function OverlayLineChart({ series }: { series: OverlaySeries[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <LineChart margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis
+          type="number"
+          dataKey="hours"
+          tick={AXIS_TICK}
+          tickLine={false}
+          axisLine={{ stroke: GRID }}
+          tickFormatter={(h: number) => `${Math.round(h)}s`}
+          domain={[0, 24]}
+          ticks={[0, 6, 12, 18, 24]}
+          allowDataOverflow
+        />
+        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={formatTick} />
+        <Tooltip
+          contentStyle={TOOLTIP_STYLE}
+          labelFormatter={(h) => `${Math.round(Number(h))}. saat`}
+          formatter={(value, name) => [formatTooltipValue(value), String(name)]}
+        />
+        <Legend wrapperStyle={{ fontSize: 11, color: INK_MUTED }} />
+        {series.map((entry, index) => (
+          <Line
+            key={entry.name}
+            data={entry.points}
+            dataKey="engagement"
+            name={entry.name}
+            type="monotone"
+            stroke={CATEGORICAL[index % CATEGORICAL.length]}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+          />
+        ))}
       </LineChart>
     </ResponsiveContainer>
   );

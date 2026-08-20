@@ -5,9 +5,12 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AccountRole, Platform } from '@socialscope/shared';
 
 import { AnalysisPanel } from '@/components/AnalysisPanel';
+import { CampaignsPanel } from '@/components/CampaignsPanel';
 import { ComparisonPanel } from '@/components/ComparisonPanel';
 import { DashboardPanel } from '@/components/DashboardPanel';
+import { GoalsPanel } from '@/components/GoalsPanel';
 import { RecommendationsPanel } from '@/components/RecommendationsPanel';
+import { TrackingPanel } from '@/components/TrackingPanel';
 import { JobLogCard } from '@/components/JobLogCard';
 import { PostsPanel } from '@/components/PostsPanel';
 import { ScrapeCard } from '@/components/ScrapeCard';
@@ -26,6 +29,9 @@ const TABS = [
   { id: 'analiz', label: 'Analiz' },
   { id: 'karsilastirma', label: 'Karşılaştırma' },
   { id: 'oneriler', label: 'Öneriler' },
+  { id: 'takip', label: 'Takip' },
+  { id: 'kampanyalar', label: 'Kampanyalar' },
+  { id: 'hedefler', label: 'Hedefler' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -33,6 +39,7 @@ export default function HomePage() {
   const [tab, setTab] = useState<TabId>('panel');
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
   const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
+  const [archiveCap, setArchiveCap] = useState<number | null>(null);
   const [schemaWarning, setSchemaWarning] = useState<string | null>(null);
   const [job, setJob] = useState<JobView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +58,11 @@ export default function HomePage() {
       if (accountsRes.ok) {
         const data = (await accountsRes.json()) as {
           accounts: AccountSummary[];
+          archiveCap?: number;
           error?: string;
         };
         setAccounts(data.accounts);
+        setArchiveCap(data.archiveCap ?? null);
         setSchemaWarning(data.error ?? null);
       }
     } catch {
@@ -217,10 +226,17 @@ export default function HomePage() {
 
       {tab === 'oneriler' && <RecommendationsPanel accounts={accounts} />}
 
+      {tab === 'takip' && <TrackingPanel />}
+
+      {tab === 'kampanyalar' && <CampaignsPanel />}
+
+      {tab === 'hedefler' && <GoalsPanel accounts={accounts} />}
+
       {tab === 'panel' && (
         <>
       <DashboardPanel
         accounts={accounts}
+        archiveCap={archiveCap}
         busy={busy}
         schemaWarning={schemaWarning}
         onAdd={(platform, username, role) => void addAccount(platform, username, role)}

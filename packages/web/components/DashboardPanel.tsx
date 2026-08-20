@@ -8,6 +8,7 @@ import type { AccountSummary } from '@/lib/api-types';
 
 interface Props {
   accounts: AccountSummary[] | null;
+  archiveCap: number | null;
   busy: boolean;
   schemaWarning: string | null;
   onAdd: (platform: Platform, username: string, role: AccountRole) => void;
@@ -29,6 +30,7 @@ function formatAvg(value: number | null): string {
 
 export function DashboardPanel({
   accounts,
+  archiveCap,
   busy,
   schemaWarning,
   onAdd,
@@ -144,11 +146,37 @@ export function DashboardPanel({
                     )}
                   </dd>
                 </div>
-                <div className="rounded-md bg-slate-900 py-2">
+                <div className="rounded-md bg-slate-900 px-1 py-2">
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">
-                    Gönderi
+                    Arşiv
                   </dt>
-                  <dd className="text-sm font-semibold">{account.postCount}</dd>
+                  {(() => {
+                    // Archive fills toward the deepening cap (or the profile's
+                    // real total, whichever is smaller).
+                    const cap = archiveCap ?? 100;
+                    const target = Math.min(cap, account.profilePostCount ?? cap);
+                    const complete = account.postCount >= target;
+                    return (
+                      <dd className="text-sm font-semibold">
+                        {complete
+                          ? account.postCount
+                          : `${account.postCount} / ${target}`}
+                        {!complete && (
+                          <span
+                            className="mt-1 block h-1 overflow-hidden rounded-full bg-slate-800"
+                            title={`Arşiv günde ~25 gönderi derinleşir (üst sınır ${cap})`}
+                          >
+                            <span
+                              className="block h-full rounded-full bg-emerald-500"
+                              style={{
+                                width: `${Math.min(100, Math.round((account.postCount / target) * 100))}%`,
+                              }}
+                            />
+                          </span>
+                        )}
+                      </dd>
+                    );
+                  })()}
                 </div>
                 <div className="rounded-md bg-slate-900 py-2">
                   <dt className="text-[10px] uppercase tracking-wider text-slate-500">

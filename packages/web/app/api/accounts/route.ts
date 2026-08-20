@@ -23,7 +23,11 @@ interface FollowerRow {
   followers: number | null;
   following: number | null;
   prev_followers: number | null;
+  post_count: number | null;
 }
+
+/** Where the daily archive deepening stops (mirrors the tracker's ARCHIVE_CAP). */
+const ARCHIVE_CAP = Math.max(25, Number(process.env.ARCHIVE_CAP ?? 100) || 100);
 
 export function GET(): NextResponse {
   const db = openDbReadonly();
@@ -66,8 +70,8 @@ export function GET(): NextResponse {
 
   // Latest two follower snapshots per account → current count + growth delta.
   const followerStmt = db.prepare(
-    `SELECT followers, following, prev_followers FROM (
-       SELECT followers, following,
+    `SELECT followers, following, prev_followers, post_count FROM (
+       SELECT followers, following, post_count,
               LEAD(followers) OVER (ORDER BY captured_at DESC) AS prev_followers,
               ROW_NUMBER() OVER (ORDER BY captured_at DESC) AS rn
        FROM account_snapshots
@@ -79,11 +83,13 @@ export function GET(): NextResponse {
     let followers: number | null = null;
     let following: number | null = null;
     let followerGrowth: number | null = null;
+    let profilePostCount: number | null = null;
     try {
       const f = followerStmt.get(row.platform, row.username) as FollowerRow | undefined;
       if (f) {
         followers = f.followers;
         following = f.following;
+        profilePostCount = f.post_count;
         followerGrowth =
           f.followers !== null && f.prev_followers !== null
             ? f.followers - f.prev_followers
@@ -93,6 +99,7 @@ export function GET(): NextResponse {
       // account_snapshots table missing (pre-migration-003) — leave nulls.
     }
     return {
+      profilePostCount,
       platform: row.platform,
       username: row.username,
       role: row.role,
@@ -107,7 +114,7 @@ export function GET(): NextResponse {
       followerGrowth,
     };
   });
-  return NextResponse.json({ dbReady: true, accounts });
+  return NextResponse.json({ dbReady: true, accounts, archiveCap: ARCHIVE_CAP });
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
