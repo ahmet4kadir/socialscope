@@ -9,6 +9,7 @@ import type { SessionInfo } from '@/lib/api-types';
 interface Props {
   sessions: SessionInfo[] | null;
   busy: boolean;
+  technical: boolean;
   onLogin: (platform: Platform) => void;
   onRefresh: () => void;
   onError: (message: string) => void;
@@ -26,7 +27,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function SessionCard({ sessions, busy, onLogin, onRefresh, onError }: Props) {
+export function SessionCard({ sessions, busy, technical, onLogin, onRefresh, onError }: Props) {
   const [uploading, setUploading] = useState<Platform | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -59,13 +60,13 @@ export function SessionCard({ sessions, busy, onLogin, onRefresh, onError }: Pro
       <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-400">
         <li>
           <strong className="text-slate-300">Bu bilgisayarda:</strong> Giriş
-          butonuna tıklayın — gerçek bir tarayıcı açılır, hesabınıza giriş
+          butonuna tıklayın, gerçek bir tarayıcı açılır, hesabınıza giriş
           yaparsınız (2FA sorun değil), oturum kaydedilir.
         </li>
         <li>
           <strong className="text-slate-300">Sunucuya taşımak için:</strong>{' '}
           oturumu &quot;İndir&quot; ile bu makineden alın, sunucudaki panelde
-          &quot;Yükle&quot; ile aktarın — sunucuda tarayıcıya gerek kalmaz.
+          &quot;Yükle&quot; ile aktarın, sunucuda tarayıcıya gerek kalmaz.
         </li>
       </ol>
 
@@ -133,9 +134,15 @@ export function SessionCard({ sessions, busy, onLogin, onRefresh, onError }: Pro
       </div>
 
       <p className="text-xs text-slate-500">
-        Şifreniz hiçbir yere kaydedilmez; yalnızca tarayıcı çerezleri yerel{' '}
-        <code className="text-slate-400">.sessions/</code> klasöründe tutulur.
-        Oturum dosyasını gizli tutun — hesabınıza erişim sağlar.
+        Şifreniz hiçbir yere kaydedilmez; yalnızca tarayıcı çerezleri{' '}
+        {technical ? (
+          <>
+            yerel <code className="text-slate-400">.sessions/</code> klasöründe
+          </>
+        ) : (
+          'bu bilgisayarda güvenle'
+        )}{' '}
+        saklanır. Oturum dosyasını gizli tutun; hesabınıza erişim sağlar.
       </p>
     </section>
   );

@@ -150,7 +150,7 @@ export function GoalsPanel({ accounts }: Props) {
       ) : goals.length === 0 ? (
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <p className="text-sm text-slate-500">
-            Henüz hedef yok — örneğin &quot;500 takipçi&quot; hedefi koyup
+            Henüz hedef yok, örneğin &quot;500 takipçi&quot; hedefi koyup
             ilerlemeyi buradan izleyin.
           </p>
         </section>
@@ -186,7 +186,7 @@ export function GoalsPanel({ accounts }: Props) {
 
               {goal.current === null ? (
                 <p className="text-sm text-slate-500">
-                  Mevcut değer henüz bilinmiyor — tarama verisi biriktikçe
+                  Mevcut değer henüz bilinmiyor, tarama verisi biriktikçe
                   hesaplanır.
                 </p>
               ) : (

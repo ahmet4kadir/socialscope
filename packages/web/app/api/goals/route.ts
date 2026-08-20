@@ -19,7 +19,7 @@ export interface GoalView {
   createdAt: string;
 }
 
-const SCHEMA_HINT = 'Hedef tablosu eksik — `npm run migrate` çalıştırın.';
+const SCHEMA_HINT = 'Hedef tablosu eksik, `npm run migrate` çalıştırın.';
 
 export function GET(): NextResponse {
   const db = openDbReadonly();
@@ -118,7 +118,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const db = openDbWritable();
   if (!db) {
     return NextResponse.json(
-      { error: 'Veritabanı henüz yok — önce `npm run migrate` çalıştırın.' },
+      { error: 'Veritabanı henüz yok, önce `npm run migrate` çalıştırın.' },
       { status: 409 },
     );
   }

@@ -64,7 +64,7 @@ export function GET(): NextResponse {
     return NextResponse.json({
       dbReady: false,
       accounts: [],
-      error: 'Veritabanı şeması eski — `npm run migrate` çalıştırın.',
+      error: 'Veritabanı şeması eski, `npm run migrate` çalıştırın.',
     });
   }
 
@@ -96,7 +96,7 @@ export function GET(): NextResponse {
             : null;
       }
     } catch {
-      // account_snapshots table missing (pre-migration-003) — leave nulls.
+      // account_snapshots table missing (pre-migration-003), leave nulls.
     }
     return {
       profilePostCount,
@@ -130,7 +130,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const username = body.username?.replace(/^@/, '').trim().toLowerCase() ?? '';
   if (!USERNAME_PATTERN.test(username)) {
     return NextResponse.json(
-      { error: 'Geçersiz kullanıcı adı — harf, rakam, nokta ve alt çizgi kullanın.' },
+      { error: 'Geçersiz kullanıcı adı, harf, rakam, nokta ve alt çizgi kullanın.' },
       { status: 400 },
     );
   }
@@ -144,7 +144,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const db = openDbWritable();
   if (!db) {
     return NextResponse.json(
-      { error: 'Veritabanı henüz yok — önce `npm run migrate` çalıştırın.' },
+      { error: 'Veritabanı henüz yok, önce `npm run migrate` çalıştırın.' },
       { status: 409 },
     );
   }
@@ -155,7 +155,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     ).run(body.platform, username, body.role, new Date().toISOString());
   } catch {
     return NextResponse.json(
-      { error: 'Hesap kaydedilemedi — veritabanı şeması eski olabilir, `npm run migrate` çalıştırın.' },
+      { error: 'Hesap kaydedilemedi, veritabanı şeması eski olabilir, `npm run migrate` çalıştırın.' },
       { status: 500 },
     );
   }

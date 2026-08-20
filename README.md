@@ -47,11 +47,18 @@ collects itself.
   competitors, hashtag strategy, follower-loss alerts, and per-1000-follower
   engagement comparison. Every recommendation cites the numbers it's based
   on.
-- **Turkish web dashboard** (Next.js) with seven tabs: control panel
-  (login/scrape/track jobs with live logs), per-account analysis with charts,
-  side-by-side competitor benchmarking, recommendations, tracking growth
-  curves with a first-24 h overlay, campaign tagging & measurement, and KPI
-  goals with live progress.
+- **Turkish web dashboard** (Next.js) with nine tabs: control panel
+  (login/scrape/track jobs), per-account analysis with charts,
+  period-over-period trends, side-by-side competitor benchmarking,
+  recommendations, a content planner (plan posts with data-driven
+  suggestions, link the published post, measure planned-vs-actual), tracking
+  growth curves with a first-24 h overlay, campaign tagging & measurement,
+  and KPI goals with live progress.
+- **Customer & technical view modes**: the customer view translates every
+  job's raw output into plain Turkish status messages; the technical view
+  adds raw logs, file paths, and CLI hints for the operator.
+- **Optional password gate** (`DASHBOARD_PASSWORD`) for internet-facing
+  deployments.
 - **One-page markdown report** of the entire analysis, downloadable from the
   dashboard.
 - **Headless-server friendly**: log in on a desktop, download the session
@@ -120,8 +127,10 @@ Then everything happens in the dashboard:
 3. **Tracker** — run `npm run tracker` in a spare terminal (or as a service)
    for the time-series machinery: 6-hourly sweeps, hourly post snapshots,
    auto-enrollment of your fresh posts, daily archive deepening.
-4. Explore the **Analiz / Karşılaştırma / Öneriler / Takip / Kampanyalar /
-   Hedefler** tabs, and export everything with **Rapor İndir**.
+4. Explore the **Analiz / Trendler / Karşılaştırma / Öneriler / Planlayıcı /
+   Takip / Kampanyalar / Hedefler** tabs, and export everything with
+   **Rapor İndir**. The Müşteri/Teknik switch in the header toggles between
+   the plain-language customer view and the operator view with raw logs.
 
 CLI equivalents exist for scripting:
 
@@ -157,6 +166,7 @@ dashboard reads). Migrations in `packages/collector/src/db/migrations/`.
 | `sweeps` | Last completed sweep per account — backs the 6 h cache |
 | `campaigns`, `campaign_posts` | Named groups of posts measured together |
 | `goals` | KPI targets per account; progress computed live from current metrics |
+| `planned_posts` | Content planner entries, linkable to the real published post |
 
 ## Deployment (headless server / Coolify)
 
@@ -178,9 +188,9 @@ web dashboard and the tracker in one container. Point Coolify at the repo
 (build with Dockerfile, not Nixpacks), expose port 3000, and attach
 persistent volumes at `/app/data` and `/app/.sessions`. Note that scraping
 from datacenter IPs draws more platform scrutiny than a home connection —
-throwaway accounts matter even more there. The dashboard has no built-in
-authentication; keep it behind a reverse-proxy auth layer or a private
-network if the server is reachable from the internet.
+throwaway accounts matter even more there. For internet-facing deployments
+set `DASHBOARD_PASSWORD` in the environment: every page and API call then
+requires login at `/giris` (leave it unset on localhost).
 
 ## Testing
 

@@ -61,7 +61,7 @@ export function GET(request: Request): NextResponse {
       const parsed: unknown = JSON.parse(row.hashtags_json);
       if (Array.isArray(parsed)) hashtags = parsed.filter((t): t is string => typeof t === 'string');
     } catch {
-      // Malformed hashtags_json — treat as no hashtags rather than failing.
+      // Malformed hashtags_json, treat as no hashtags rather than failing.
     }
     return {
       id: row.id,

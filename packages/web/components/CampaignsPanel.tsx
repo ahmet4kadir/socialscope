@@ -102,7 +102,7 @@ export function CampaignsPanel() {
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <p className="text-sm text-slate-500">
             Henüz kampanya yok. Örneğin &quot;Yaz Lansmanı&quot; adında bir
-            kampanya oluşturup ilgili gönderileri ekleyin — toplam ve ortalama
+            kampanya oluşturup ilgili gönderileri ekleyin, toplam ve ortalama
             performansı burada ölçülür.
           </p>
         </section>

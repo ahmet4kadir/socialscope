@@ -100,7 +100,7 @@ export function DashboardPanel({
       ) : accounts.length === 0 ? (
         <p className="text-sm text-slate-500">
           Henüz kayıtlı hesap yok. Yukarıdan hesap ekleyin veya bir tarama
-          başlatın — taranan hesaplar otomatik kaydedilir.
+          başlatın, taranan hesaplar otomatik kaydedilir.
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

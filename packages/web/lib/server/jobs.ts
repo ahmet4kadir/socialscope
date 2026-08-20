@@ -46,7 +46,7 @@ export function startJob(
   cliArgs: string[],
 ): { job: JobView } | { error: string } {
   if (activeJob()) {
-    return { error: 'Zaten çalışan bir işlem var — önce onun bitmesini bekleyin.' };
+    return { error: 'Zaten çalışan bir işlem var, önce onun bitmesini bekleyin.' };
   }
 
   const script = path.join(COLLECTOR_DIR, 'src', 'cli', `${kind}.ts`);

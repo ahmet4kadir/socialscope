@@ -70,7 +70,7 @@ export function CategoryBarChart({
   );
 }
 
-/** Horizontal bars — used where category names are long (hashtags). */
+/** Horizontal bars, used where category names are long (hashtags). */
 export function HorizontalBarChart({
   data,
   valueLabel,
@@ -113,7 +113,7 @@ export function HorizontalBarChart({
   );
 }
 
-const NEUTRAL = '#64748b'; // slate-500 — competitor bars
+const NEUTRAL = '#64748b'; // slate-500, competitor bars
 
 // Validated categorical order for multi-series overlays (dark surface;
 // dataviz validator: lightness band, chroma, CVD separation, contrast all
@@ -171,7 +171,7 @@ export function EmphasisBarChart({
   );
 }
 
-/** Follower count over time — a single line, so no legend needed. */
+/** Follower count over time, a single line, so no legend needed. */
 export function FollowerChart({ points }: { points: FollowerPoint[] }) {
   const data = points
     .filter((p) => p.followers !== null)
@@ -346,8 +346,8 @@ export function HeatmapGrid({ cells }: { cells: HeatmapCell[] }) {
                   key={hour}
                   title={
                     cell
-                      ? `${DAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00 — ort. etkileşim ${value}, ${cell.count} gönderi`
-                      : `${DAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00 — gönderi yok`
+                      ? `${DAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00, ort. etkileşim ${value}, ${cell.count} gönderi`
+                      : `${DAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00, gönderi yok`
                   }
                   className="h-4 flex-1 rounded-[3px]"
                   style={{ backgroundColor: color }}

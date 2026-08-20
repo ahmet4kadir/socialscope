@@ -5,7 +5,7 @@ import type { HashtagMetric } from './metrics/hashtags';
 import type { LengthBucketMetric } from './metrics/content-length';
 
 // Rule-based recommendation engine: every recommendation is derived from the
-// computed metrics and cites its evidence. No LLM involved — deliberately
+// computed metrics and cites its evidence. No LLM involved, deliberately
 // deterministic and auditable. Output text is Turkish (the product's UI
 // language); the rules themselves are language-independent.
 
@@ -87,7 +87,7 @@ export function buildRecommendations(input: RecommendationInput): Recommendation
   return out.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 }
 
-/** Post at your proven best slot — when it clearly beats your average. */
+/** Post at your proven best slot, when it clearly beats your average. */
 function bestHourRule(input: RecommendationInput, out: Recommendation[]): void {
   const overall = input.metrics.avgEngagement;
   const best = bestHeatmapSlot(input.heatmap);
@@ -100,12 +100,12 @@ function bestHourRule(input: RecommendationInput, out: Recommendation[]): void {
     category: 'zamanlama',
     priority: 'high',
     title: `En güçlü saatiniz: ${slot}`,
-    advice: `Yeni gönderilerinizi ${slot} civarına planlayın — bu saat dilimindeki gönderileriniz hesap ortalamanızın belirgin üstünde performans gösteriyor.`,
+    advice: `Yeni gönderilerinizi ${slot} civarına planlayın, bu saat dilimindeki gönderileriniz hesap ortalamanızın belirgin üstünde performans gösteriyor.`,
     evidence: `${slot} ortalama etkileşimi ${fmt(best.avgEngagement)} (${best.count} gönderi); hesap ortalaması ${fmt(overall)}.`,
   });
 }
 
-/** Lean into the format that outperforms — when the gap is real. */
+/** Lean into the format that outperforms, when the gap is real. */
 function mediaTypeRule(input: RecommendationInput, out: Recommendation[]): void {
   const ranked = input.media
     .filter((m) => m.avgEngagement !== null && m.count >= 2)
@@ -156,7 +156,7 @@ function hashtagRules(input: RecommendationInput, out: Recommendation[]): void {
       category: 'hashtag',
       priority: 'medium',
       title: 'Hiç hashtag kullanmıyorsunuz',
-      advice: `Gönderilerinize alanınızla ilgili 3-5 hashtag ekleyin — keşfet erişiminin en ucuz yolu. Başlangıç için rakibinizin kullandıklarına bakabilirsiniz: ${withTags.topHashtags.map((t) => `#${t}`).join(' ')}.`,
+      advice: `Gönderilerinize alanınızla ilgili 3-5 hashtag ekleyin, keşfet erişiminin en ucuz yolu. Başlangıç için rakibinizin kullandıklarına bakabilirsiniz: ${withTags.topHashtags.map((t) => `#${t}`).join(' ')}.`,
       evidence: `Sizin gönderilerinizde hashtag yok; @${withTags.username} düzenli olarak ${withTags.topHashtags.map((t) => `#${t}`).join(', ')} kullanıyor.`,
     });
     return;
@@ -171,7 +171,7 @@ function hashtagRules(input: RecommendationInput, out: Recommendation[]): void {
     category: 'hashtag',
     priority: 'medium',
     title: `#${top.hashtag} sizin için çalışıyor`,
-    advice: `#${top.hashtag} etiketini kullanmaya devam edin ve benzer etiketler deneyin — bu etiketli gönderileriniz ortalamanın üstünde.`,
+    advice: `#${top.hashtag} etiketini kullanmaya devam edin ve benzer etiketler deneyin, bu etiketli gönderileriniz ortalamanın üstünde.`,
     evidence: `#${top.hashtag} ile ort. ${fmt(top.avgEngagement ?? 0)} etkileşim (${top.count} gönderi); hesap ortalaması ${fmt(overall)}.`,
   });
 }
@@ -220,7 +220,7 @@ function followerGrowthRule(input: RecommendationInput, out: Recommendation[]): 
 }
 
 /**
- * Engagement per 1000 followers — the fair way to compare accounts of very
+ * Engagement per 1000 followers, the fair way to compare accounts of very
  * different sizes. Praises real strength, flags a real gap.
  */
 function engagementRateRule(input: RecommendationInput, out: Recommendation[]): void {
@@ -240,7 +240,7 @@ function engagementRateRule(input: RecommendationInput, out: Recommendation[]): 
       priority: 'low',
       title: 'Etkileşim oranınız rakiplerden güçlü',
       advice:
-        'Takipçi başına etkileşimde öndesiniz — büyüme için içerik kalitesinden ödün vermeden erişimi (sıklık, hashtag, paylaşım saati) artırmaya odaklanabilirsiniz.',
+        'Takipçi başına etkileşimde öndesiniz, büyüme için içerik kalitesinden ödün vermeden erişimi (sıklık, hashtag, paylaşım saati) artırmaya odaklanabilirsiniz.',
       evidence: `Sizde 1.000 takipçi başına ${fmt(mine)} etkileşim; en yakın rakip @${top.username} ${fmt(top.rate)}.`,
     });
   } else if (top.rate >= mine * 1.2) {

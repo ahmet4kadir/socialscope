@@ -54,7 +54,7 @@ export async function GET(
 }
 
 // Upload a session file exported from another machine (zero server-side
-// interaction — no browser needed on the server).
+// interaction, no browser needed on the server).
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ platform: string }> },
@@ -67,7 +67,7 @@ export async function POST(
   const raw = await request.text();
   if (raw.length > MAX_UPLOAD_BYTES) {
     return NextResponse.json(
-      { error: 'Dosya çok büyük — geçerli bir oturum dosyası değil.' },
+      { error: 'Dosya çok büyük, geçerli bir oturum dosyası değil.' },
       { status: 413 },
     );
   }

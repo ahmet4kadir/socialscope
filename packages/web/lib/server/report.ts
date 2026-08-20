@@ -8,7 +8,7 @@ import {
   recommendationsFor,
 } from './analysis';
 
-// Single-page markdown report of the full analysis — the shareable artifact
+// Single-page markdown report of the full analysis, the shareable artifact
 // of the whole pipeline. Turkish, like the rest of the user-facing output.
 
 const DAY_NAMES: Record<number, string> = {
@@ -74,13 +74,13 @@ export function generateReport(db: Database | null): string {
 
   // --- Hesap detayları -----------------------------------------------------
   for (const { account, analysis } of analyses) {
-    lines.push(`## @${account.username} — Detaylı Analiz`, '');
+    lines.push(`## @${account.username} için Detaylı Analiz`, '');
 
     const best = bestHeatmapSlot(analysis.heatmap);
     if (best) {
       lines.push(
         `**En iyi paylaşım saati:** ${DAY_NAMES[best.dayOfWeek]} ${String(best.hour).padStart(2, '0')}:00 ` +
-          `(ort. etkileşim ${num(best.avgEngagement)}, ${best.count} gönderi — Türkiye saati)`,
+          `(ort. etkileşim ${num(best.avgEngagement)}, ${best.count} gönderi, Türkiye saati)`,
         '',
       );
     }
@@ -120,10 +120,10 @@ export function generateReport(db: Database | null): string {
   for (const account of myAccounts) {
     const recommendations = recommendationsFor(db, account.platform, account.username);
     if (recommendations.length === 0) continue;
-    lines.push(`## Öneriler — @${account.username}`, '');
+    lines.push(`## @${account.username} için Öneriler`, '');
     for (const rec of recommendations) {
       lines.push(
-        `- **[${PRIORITY_NAMES[rec.priority]}] ${rec.title}** — ${rec.advice}`,
+        `- **[${PRIORITY_NAMES[rec.priority]}] ${rec.title}:** ${rec.advice}`,
         `  - _Kanıt: ${rec.evidence}_`,
       );
     }

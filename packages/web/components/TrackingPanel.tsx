@@ -17,7 +17,7 @@ function postLabel(post: TrackedPostView): string {
   return `@${post.username} · ${date}`;
 }
 
-export function TrackingPanel() {
+export function TrackingPanel({ technical }: { technical: boolean }) {
   const [posts, setPosts] = useState<TrackedPostView[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -41,10 +41,17 @@ export function TrackingPanel() {
       <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <p className="text-sm text-slate-500">
           Henüz takip edilen gönderi yok. Panel sekmesinde bir gönderinin
-          yanındaki &quot;Takibe Al&quot; butonunu kullanın — yeni gönderileriniz
-          tarayıcı (tracker) çalışırken otomatik takibe alınır. Saatlik veriler
-          için <code className="text-slate-400">npm run tracker</code>{' '}
-          çalışıyor olmalı.
+          yanındaki &quot;Takibe Al&quot; butonunu kullanın; yeni
+          gönderileriniz ise takip servisi çalışırken otomatik takibe alınır.
+          {technical ? (
+            <>
+              {' '}Saatlik ölçümler için{' '}
+              <code className="text-slate-400">npm run tracker</code> çalışıyor
+              olmalı.
+            </>
+          ) : (
+            ' Saatlik ölçümlerin birikmesi için takip servisinin açık olması gerekir.'
+          )}
         </p>
       </section>
     );
@@ -185,7 +192,7 @@ export function TrackingPanel() {
           </div>
         ) : (
           <p className="text-sm text-slate-500">
-            Eğri için en az iki ölçüm gerekli — tracker çalıştıkça saatlik
+            Eğri için en az iki ölçüm gerekli, tracker çalıştıkça saatlik
             ölçümler birikir.
           </p>
         )}
@@ -200,7 +207,7 @@ export function TrackingPanel() {
         ) : (
           <p className="text-sm text-slate-500">
             Bu grafik, takip edilen gönderilerin ilk 24 saatteki büyüme
-            eğrilerini üst üste bindirir — hangi gönderinin daha hızlı
+            eğrilerini üst üste bindirir, hangi gönderinin daha hızlı
             &quot;kalktığını&quot; gösterir. En az bir gönderide iki ölçüm
             birikince burada belirir.
           </p>

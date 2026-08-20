@@ -86,7 +86,7 @@ export function ScrapeCard({ busy, onScrape }: Props) {
             onChange={(event) => setForce(event.target.checked)}
             className="accent-emerald-500"
           />
-          6 saatlik önbelleği yok say (--force)
+          Son 6 saat içinde tarandıysa bile yeniden tara
         </label>
 
         <button

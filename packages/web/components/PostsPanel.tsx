@@ -37,7 +37,7 @@ export function PostsPanel({ account, posts, busy, onTrack }: Props) {
         <p className="text-sm text-slate-500">Yükleniyor…</p>
       ) : posts.length === 0 ? (
         <p className="text-sm text-slate-500">
-          Bu hesap için gönderi yok — önce bir tarama çalıştırın.
+          Bu hesap için gönderi yok, önce bir tarama çalıştırın.
         </p>
       ) : (
         <div className="overflow-x-auto">

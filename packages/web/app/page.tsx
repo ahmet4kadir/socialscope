@@ -9,8 +9,10 @@ import { CampaignsPanel } from '@/components/CampaignsPanel';
 import { ComparisonPanel } from '@/components/ComparisonPanel';
 import { DashboardPanel } from '@/components/DashboardPanel';
 import { GoalsPanel } from '@/components/GoalsPanel';
+import { PlannerPanel } from '@/components/PlannerPanel';
 import { RecommendationsPanel } from '@/components/RecommendationsPanel';
 import { TrackingPanel } from '@/components/TrackingPanel';
+import { TrendsPanel } from '@/components/TrendsPanel';
 import { JobLogCard } from '@/components/JobLogCard';
 import { PostsPanel } from '@/components/PostsPanel';
 import { ScrapeCard } from '@/components/ScrapeCard';
@@ -22,13 +24,15 @@ import type {
   SessionInfo,
 } from '@/lib/api-types';
 
-const GENERIC_ERROR = 'Sunucuya ulaşılamadı — sayfayı yenileyip tekrar deneyin.';
+const GENERIC_ERROR = 'Sunucuya ulaşılamadı, sayfayı yenileyip tekrar deneyin.';
 
 const TABS = [
   { id: 'panel', label: 'Panel' },
   { id: 'analiz', label: 'Analiz' },
+  { id: 'trendler', label: 'Trendler' },
   { id: 'karsilastirma', label: 'Karşılaştırma' },
   { id: 'oneriler', label: 'Öneriler' },
+  { id: 'planlayici', label: 'Planlayıcı' },
   { id: 'takip', label: 'Takip' },
   { id: 'kampanyalar', label: 'Kampanyalar' },
   { id: 'hedefler', label: 'Hedefler' },
@@ -37,6 +41,17 @@ type TabId = (typeof TABS)[number]['id'];
 
 export default function HomePage() {
   const [tab, setTab] = useState<TabId>('panel');
+  // Customer view hides technical details (raw logs, file paths, CLI hints);
+  // technical view shows everything. Persisted per browser.
+  const [technical, setTechnical] = useState(false);
+
+  useEffect(() => {
+    setTechnical(localStorage.getItem('socialscope-view') === 'technical');
+  }, []);
+  const switchView = (value: boolean) => {
+    setTechnical(value);
+    localStorage.setItem('socialscope-view', value ? 'technical' : 'customer');
+  };
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
   const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
   const [archiveCap, setArchiveCap] = useState<number | null>(null);
@@ -97,7 +112,7 @@ export default function HomePage() {
           setJob(data.job);
           if (data.job.status !== 'running') void refreshData();
         } catch {
-          // Transient polling failure — the next tick retries.
+          // Transient polling failure, the next tick retries.
         }
       })();
     }, 2000);
@@ -193,16 +208,39 @@ export default function HomePage() {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">SocialScope</h1>
           <p className="text-slate-400">
-            Sosyal medya pazarlama analizi — giriş yapın, hesapları tarayın ve
+            Sosyal medya pazarlama analizi: giriş yapın, hesapları tarayın,
             verileri buradan takip edin.
           </p>
         </div>
-        <a
-          href="/api/report"
-          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400"
-        >
-          📄 Rapor İndir
-        </a>
+        <div className="flex items-center gap-3">
+          <div className="flex overflow-hidden rounded-lg border border-slate-700 text-xs font-medium">
+            {(
+              [
+                [false, 'Müşteri'],
+                [true, 'Teknik'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => switchView(value)}
+                className={`px-3 py-2 transition ${
+                  technical === value
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <a
+            href="/api/report"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400"
+          >
+            📄 Rapor İndir
+          </a>
+        </div>
       </header>
 
       <nav className="flex gap-1 border-b border-slate-800">
@@ -230,11 +268,15 @@ export default function HomePage() {
 
       {tab === 'analiz' && <AnalysisPanel accounts={accounts} />}
 
+      {tab === 'trendler' && <TrendsPanel accounts={accounts} />}
+
+      {tab === 'planlayici' && <PlannerPanel accounts={accounts} />}
+
       {tab === 'karsilastirma' && <ComparisonPanel />}
 
       {tab === 'oneriler' && <RecommendationsPanel accounts={accounts} />}
 
-      {tab === 'takip' && <TrackingPanel />}
+      {tab === 'takip' && <TrackingPanel technical={technical} />}
 
       {tab === 'kampanyalar' && <CampaignsPanel />}
 
@@ -264,6 +306,7 @@ export default function HomePage() {
         <SessionCard
           sessions={sessions}
           busy={busy}
+          technical={technical}
           onLogin={(platform) => void startJob('/api/login', { platform })}
           onRefresh={() => void refreshData()}
           onError={setError}
@@ -276,7 +319,7 @@ export default function HomePage() {
         />
       </div>
 
-      {job && <JobLogCard job={job} />}
+      {job && <JobLogCard job={job} technical={technical} />}
 
       {selected && (
         <PostsPanel

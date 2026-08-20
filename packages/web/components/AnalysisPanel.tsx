@@ -96,7 +96,7 @@ export function AnalysisPanel({ accounts }: Props) {
     return (
       <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <EmptyNote>
-          Analiz için önce bir hesap ekleyip tarayın — Panel sekmesinden
+          Analiz için önce bir hesap ekleyip tarayın, Panel sekmesinden
           başlayabilirsiniz.
         </EmptyNote>
       </section>
@@ -153,7 +153,7 @@ export function AnalysisPanel({ accounts }: Props) {
           {metrics.postCount === 0 ? (
             <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
               <EmptyNote>
-                Bu hesap için henüz gönderi verisi yok — önce bir tarama
+                Bu hesap için henüz gönderi verisi yok, önce bir tarama
                 çalıştırın.
               </EmptyNote>
             </section>
@@ -178,7 +178,7 @@ export function AnalysisPanel({ accounts }: Props) {
                   <FollowerChart points={data.followers} />
                 ) : (
                   <EmptyNote>
-                    Takipçi grafiği için en az iki tarama gerekli — her tarama
+                    Takipçi grafiği için en az iki tarama gerekli, her tarama
                     bir ölçüm ekler, veriler zamanla birikir.
                     {currentFollowers !== null &&
                       ` Şu anki takipçi sayısı: ${formatNumber(currentFollowers)}.`}
@@ -223,7 +223,7 @@ export function AnalysisPanel({ accounts }: Props) {
                   />
                 ) : (
                   <EmptyNote>
-                    Bu hesabın gönderilerinde hashtag kullanılmamış — hashtag
+                    Bu hesabın gönderilerinde hashtag kullanılmamış, hashtag
                     stratejisi analizine veri girince burada görünecek.
                   </EmptyNote>
                 )}

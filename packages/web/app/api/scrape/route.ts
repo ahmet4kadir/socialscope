@@ -20,7 +20,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const username = body.username?.replace(/^@/, '').trim().toLowerCase() ?? '';
   if (!USERNAME_PATTERN.test(username)) {
     return NextResponse.json(
-      { error: 'Geçersiz kullanıcı adı — harf, rakam, nokta ve alt çizgi kullanın.' },
+      { error: 'Geçersiz kullanıcı adı, harf, rakam, nokta ve alt çizgi kullanın.' },
       { status: 400 },
     );
   }

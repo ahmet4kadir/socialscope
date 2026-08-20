@@ -67,7 +67,7 @@ export function ComparisonPanel() {
     return (
       <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <p className="text-sm text-rose-300">
-          Karşılaştırma verileri yüklenemedi — sayfayı yenileyip tekrar deneyin.
+          Karşılaştırma verileri yüklenemedi, sayfayı yenileyip tekrar deneyin.
         </p>
       </section>
     );
@@ -82,7 +82,7 @@ export function ComparisonPanel() {
     return (
       <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <p className="text-sm text-slate-500">
-          Karşılaştırma için taranmış hesap gerekli — Panel sekmesinden önce
+          Karşılaştırma için taranmış hesap gerekli, Panel sekmesinden önce
           kendi hesabınızı, sonra rakiplerinizi tarayın.
         </p>
       </section>
@@ -108,7 +108,7 @@ export function ComparisonPanel() {
         <h2 className="text-lg font-semibold">Rakip Karşılaştırması</h2>
         {accounts.length < 2 && (
           <p className="text-sm text-amber-400">
-            Şu an tek hesap var — rakip ekleyip taradığınızda yan yana
+            Şu an tek hesap var, rakip ekleyip taradığınızda yan yana
             karşılaştırma burada belirir.
           </p>
         )}

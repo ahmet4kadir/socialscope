@@ -32,7 +32,7 @@ export interface CampaignCandidate {
   snippet: string;
 }
 
-const SCHEMA_HINT = 'Kampanya tabloları eksik — `npm run migrate` çalıştırın.';
+const SCHEMA_HINT = 'Kampanya tabloları eksik, `npm run migrate` çalıştırın.';
 
 export function GET(): NextResponse {
   const db = openDbReadonly();
@@ -135,7 +135,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const db = openDbWritable();
   if (!db) {
     return NextResponse.json(
-      { error: 'Veritabanı henüz yok — önce `npm run migrate` çalıştırın.' },
+      { error: 'Veritabanı henüz yok, önce `npm run migrate` çalıştırın.' },
       { status: 409 },
     );
   }

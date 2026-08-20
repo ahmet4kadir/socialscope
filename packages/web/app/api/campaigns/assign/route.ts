@@ -24,7 +24,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const db = openDbWritable();
   if (!db) {
     return NextResponse.json(
-      { error: 'Veritabanı henüz yok — önce `npm run migrate` çalıştırın.' },
+      { error: 'Veritabanı henüz yok, önce `npm run migrate` çalıştırın.' },
       { status: 409 },
     );
   }
@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   } catch {
     return NextResponse.json(
-      { error: 'Kampanya tabloları eksik — `npm run migrate` çalıştırın.' },
+      { error: 'Kampanya tabloları eksik, `npm run migrate` çalıştırın.' },
       { status: 500 },
     );
   }
