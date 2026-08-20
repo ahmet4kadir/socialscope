@@ -35,13 +35,17 @@ export const instagramConfig = {
   },
 
   /**
-   * Cookie-consent modal that blocks content until dismissed (appears when
-   * the session's stored consent choice didn't travel with it, e.g. on a
-   * server in another region). We decline optional cookies to keep only the
-   * essential ones. Button label matched case-insensitively; the locale is
-   * forced to en-US in the browser context.
+   * Buttons that dismiss interstitial modals blocking the content. These
+   * appear when the session's stored choices didn't travel with it (e.g. on
+   * a server in another region): the cookie-consent dialog (decline optional
+   * cookies, keeping only essential ones) and the "Turn on Notifications" /
+   * "Save your login info?" prompts (Not Now). Matched case-insensitively;
+   * the browser locale is forced to en-US. Tried in order, each optional.
    */
-  cookieDeclineButton: /decline optional cookies|only allow essential cookies/i,
+  dismissButtons: [
+    /decline optional cookies|only allow essential cookies/i,
+    /not now/i,
+  ],
 
   /**
    * URL path prefixes meaning Instagram is refusing the session. Matched
