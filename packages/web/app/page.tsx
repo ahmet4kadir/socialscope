@@ -7,6 +7,7 @@ import type { AccountRole, Platform } from '@socialscope/shared';
 import { AnalysisPanel } from '@/components/AnalysisPanel';
 import { ComparisonPanel } from '@/components/ComparisonPanel';
 import { DashboardPanel } from '@/components/DashboardPanel';
+import { RecommendationsPanel } from '@/components/RecommendationsPanel';
 import { JobLogCard } from '@/components/JobLogCard';
 import { PostsPanel } from '@/components/PostsPanel';
 import { ScrapeCard } from '@/components/ScrapeCard';
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'panel', label: 'Panel' },
   { id: 'analiz', label: 'Analiz' },
   { id: 'karsilastirma', label: 'Karşılaştırma' },
+  { id: 'oneriler', label: 'Öneriler' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -212,6 +214,8 @@ export default function HomePage() {
       {tab === 'analiz' && <AnalysisPanel accounts={accounts} />}
 
       {tab === 'karsilastirma' && <ComparisonPanel />}
+
+      {tab === 'oneriler' && <RecommendationsPanel accounts={accounts} />}
 
       {tab === 'panel' && (
         <>

@@ -38,3 +38,12 @@ export {
   type GrowthInterval,
   type PostTimeSeriesMetrics,
 } from './metrics/timeseries';
+
+export {
+  buildRecommendations,
+  type CompetitorSummary,
+  type Recommendation,
+  type RecommendationCategory,
+  type RecommendationInput,
+  type RecommendationPriority,
+} from './recommendations';
