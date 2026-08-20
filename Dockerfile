@@ -26,6 +26,10 @@ COPY . .
 RUN npm run build
 
 ENV NODE_ENV=production
+# The web server binds this port; override at runtime (e.g. PORT=4749 in the
+# hosting panel's environment settings) and expose the same value there.
+# Inside the container this port is isolated, so it can't clash with services
+# already running on the host.
 ENV PORT=3000
 EXPOSE 3000
 VOLUME ["/app/data", "/app/.sessions"]

@@ -183,10 +183,23 @@ The only step that ever needs a screen is login — and sessions are portable:
 `npm run build`, then run `npm run start` (behind a reverse proxy) and
 `npm run tracker` under a process manager (pm2/systemd).
 
-**Docker / Coolify:** a [Dockerfile](Dockerfile) is included — it runs the
+**Docker / Coolify:** a [Dockerfile](Dockerfile) is included; it runs the
 web dashboard and the tracker in one container. Point Coolify at the repo
 (build with Dockerfile, not Nixpacks), expose port 3000, and attach
-persistent volumes at `/app/data` and `/app/.sessions`. Note that scraping
+persistent volumes at `/app/data` and `/app/.sessions`.
+
+*Custom domain:* add an `A` record for your subdomain (e.g.
+`mvp.yourdomain.com`) pointing at the server's IP, set that domain in
+Coolify's Domains field, and Coolify's proxy issues a Let's Encrypt
+certificate automatically once DNS propagates.
+
+*Ports:* the container port is isolated from the host, so a service already
+using 3000 on the server does not conflict. To use a different port anyway,
+set `PORT` (e.g. `4749`) in the environment and make Coolify's "Ports
+Exposes" match. On a bare server without Docker the port genuinely can
+clash; run `PORT=4749 npm run start` there.
+
+Note that scraping
 from datacenter IPs draws more platform scrutiny than a home connection —
 throwaway accounts matter even more there. For internet-facing deployments
 set `DASHBOARD_PASSWORD` in the environment: every page and API call then
