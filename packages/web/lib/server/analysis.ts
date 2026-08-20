@@ -2,14 +2,18 @@ import type { Database } from 'better-sqlite3';
 
 import {
   bestHeatmapSlot,
+  buildRecommendations,
   computeAccountMetrics,
   contentLengthPerformance,
   engagementHeatmap,
   hashtagEngagement,
   mediaTypeBreakdown,
+  type AccountRole,
+  type CompetitorSummary,
   type MediaType,
   type Platform,
   type PostStats,
+  type Recommendation,
 } from '@socialscope/shared';
 
 import type { AnalysisResponse, FollowerPoint } from '@/lib/api-types';
@@ -125,3 +129,70 @@ export function analyzeAccount(
 }
 
 export { bestHeatmapSlot };
+
+export interface RegistryAccount {
+  platform: Platform;
+  username: string;
+  role: AccountRole;
+}
+
+/** All registered accounts, or [] when the registry table doesn't exist yet. */
+export function loadRegistry(db: Database): RegistryAccount[] {
+  try {
+    return db
+      .prepare('SELECT platform, username, role FROM accounts ORDER BY role DESC, username')
+      .all() as RegistryAccount[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Evidence-cited recommendations for one account, benchmarked against every
+ * other registered account. Shared by the Öneriler tab and the report export.
+ */
+export function recommendationsFor(
+  db: Database,
+  platform: Platform,
+  username: string,
+): Recommendation[] {
+  const analysis = analyzeAccount(db, platform, username);
+  const followerPoints = analysis.followers.filter((p) => p.followers !== null);
+  const latest = followerPoints[followerPoints.length - 1];
+  const previous = followerPoints[followerPoints.length - 2];
+
+  const competitors: CompetitorSummary[] = loadRegistry(db)
+    .filter((entry) => !(entry.platform === platform && entry.username === username))
+    .map((entry) => {
+      const theirAnalysis = analyzeAccount(db, entry.platform, entry.username);
+      const theirFollowers = theirAnalysis.followers.filter((p) => p.followers !== null);
+      return {
+        username: entry.username,
+        avgEngagement: theirAnalysis.metrics.avgEngagement,
+        postingFrequencyPerWeek: theirAnalysis.metrics.postingFrequencyPerWeek,
+        followers: theirFollowers[theirFollowers.length - 1]?.followers ?? null,
+        topHashtags: theirAnalysis.hashtags.slice(0, 3).map((tag) => tag.hashtag),
+      };
+    })
+    .filter(
+      (summary) =>
+        summary.avgEngagement !== null || summary.postingFrequencyPerWeek !== null,
+    );
+
+  return buildRecommendations({
+    username,
+    metrics: analysis.metrics,
+    heatmap: analysis.heatmap,
+    media: analysis.media,
+    hashtags: analysis.hashtags,
+    contentLength: analysis.contentLength,
+    followers: {
+      current: latest?.followers ?? null,
+      growth:
+        latest?.followers != null && previous?.followers != null
+          ? latest.followers - previous.followers
+          : null,
+    },
+    competitors,
+  });
+}
