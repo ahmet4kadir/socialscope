@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AccountRole, Platform } from '@socialscope/shared';
 
 import { AnalysisPanel } from '@/components/AnalysisPanel';
+import { ComparisonPanel } from '@/components/ComparisonPanel';
 import { DashboardPanel } from '@/components/DashboardPanel';
 import { JobLogCard } from '@/components/JobLogCard';
 import { PostsPanel } from '@/components/PostsPanel';
@@ -22,6 +23,7 @@ const GENERIC_ERROR = 'Sunucuya ulaşılamadı — sayfayı yenileyip tekrar den
 const TABS = [
   { id: 'panel', label: 'Panel' },
   { id: 'analiz', label: 'Analiz' },
+  { id: 'karsilastirma', label: 'Karşılaştırma' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -208,6 +210,8 @@ export default function HomePage() {
       )}
 
       {tab === 'analiz' && <AnalysisPanel accounts={accounts} />}
+
+      {tab === 'karsilastirma' && <ComparisonPanel />}
 
       {tab === 'panel' && (
         <>

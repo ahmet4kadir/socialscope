@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -15,6 +16,7 @@ import {
 import type { HeatmapCell } from '@socialscope/shared';
 
 import type { FollowerPoint } from '@/lib/api-types';
+import { formatNumber } from '@/lib/format';
 
 // Chart tokens on the app's dark slate surface. Identity is carried by axis
 // labels everywhere, so a single accent hue does all the work (no rainbow).
@@ -31,6 +33,10 @@ const TOOLTIP_STYLE = {
 } as const;
 
 const AXIS_TICK = { fill: INK_MUTED, fontSize: 11 } as const;
+
+const formatTick = (value: number): string => formatNumber(value);
+const formatTooltipValue = (value: unknown): string =>
+  typeof value === 'number' ? formatNumber(value) : String(value);
 
 interface NamedValue {
   name: string;
@@ -51,11 +57,11 @@ export function CategoryBarChart({
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={{ stroke: GRID }} />
-        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={formatTick} />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
           cursor={{ fill: '#1e293b', opacity: 0.4 }}
-          formatter={(value) => [String(value), valueLabel]}
+          formatter={(value) => [formatTooltipValue(value), valueLabel]}
         />
         <Bar dataKey="value" fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={36} />
       </BarChart>
@@ -80,7 +86,13 @@ export function HorizontalBarChart({
         margin={{ top: 4, right: 16, bottom: 0, left: 8 }}
       >
         <CartesianGrid stroke={GRID} horizontal={false} />
-        <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={{ stroke: GRID }} />
+        <XAxis
+          type="number"
+          tick={AXIS_TICK}
+          tickLine={false}
+          axisLine={{ stroke: GRID }}
+          tickFormatter={formatTick}
+        />
         <YAxis
           type="category"
           dataKey="name"
@@ -92,11 +104,64 @@ export function HorizontalBarChart({
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
           cursor={{ fill: '#1e293b', opacity: 0.4 }}
-          formatter={(value) => [String(value), valueLabel]}
+          formatter={(value) => [formatTooltipValue(value), valueLabel]}
         />
         <Bar dataKey="value" fill={ACCENT} radius={[0, 4, 4, 0]} maxBarSize={20} />
       </BarChart>
     </ResponsiveContainer>
+  );
+}
+
+const NEUTRAL = '#64748b'; // slate-500 — competitor bars
+
+interface EmphasisValue {
+  name: string;
+  value: number;
+  /** true = my account (accent color); false = competitor (neutral). */
+  emphasized: boolean;
+}
+
+/**
+ * One measure across accounts, my own account emphasized in the accent hue.
+ * Two-class encoding (benim/rakip), so it ships with a small legend.
+ */
+export function EmphasisBarChart({
+  data,
+  valueLabel,
+}: {
+  data: EmphasisValue[];
+  valueLabel: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <CartesianGrid stroke={GRID} vertical={false} />
+          <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={{ stroke: GRID }} />
+          <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={formatTick} />
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            cursor={{ fill: '#1e293b', opacity: 0.4 }}
+            formatter={(value) => [formatTooltipValue(value), valueLabel]}
+          />
+          <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={36}>
+            {data.map((entry) => (
+              <Cell key={entry.name} fill={entry.emphasized ? ACCENT : NEUTRAL} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="flex items-center justify-end gap-3 text-[10px] text-slate-500">
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-[3px]" style={{ backgroundColor: ACCENT }} />
+          Benim hesabım
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-[3px]" style={{ backgroundColor: NEUTRAL }} />
+          Rakip
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -122,10 +187,11 @@ export function FollowerChart({ points }: { points: FollowerPoint[] }) {
           tickLine={false}
           axisLine={false}
           domain={['auto', 'auto']}
+          tickFormatter={formatTick}
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => [String(value), 'Takipçi']}
+          formatter={(value) => [formatTooltipValue(value), 'Takipçi']}
         />
         <Line
           type="monotone"
@@ -150,7 +216,7 @@ const RAMP = ['#064e3b', '#047857', '#059669', '#10b981', '#34d399'];
 const EMPTY_CELL = 'rgba(30, 41, 59, 0.45)'; // slate-800 @ 45%
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Monday-first
-const DAY_LABELS: Record<number, string> = {
+export const DAY_LABELS: Record<number, string> = {
   0: 'Paz',
   1: 'Pzt',
   2: 'Sal',

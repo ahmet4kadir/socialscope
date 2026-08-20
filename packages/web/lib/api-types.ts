@@ -79,3 +79,25 @@ export interface AnalysisResponse {
   contentLength: LengthBucketMetric[];
   followers: FollowerPoint[];
 }
+
+/** One column of the Karşılaştırma (benchmarking) table. */
+export interface ComparisonAccount {
+  platform: Platform;
+  username: string;
+  role: AccountRole;
+  postCount: number;
+  avgEngagement: number | null;
+  avgLikes: number | null;
+  avgComments: number | null;
+  postingFrequencyPerWeek: number | null;
+  followers: number | null;
+  followerGrowth: number | null;
+  /** Best posting slot: [dayOfWeek 0=Sunday, hour] plus its avg engagement. */
+  bestSlot: { dayOfWeek: number; hour: number; avgEngagement: number | null } | null;
+  topMediaType: { mediaType: MediaType; avgEngagement: number | null } | null;
+  topHashtags: string[];
+}
+
+export interface ComparisonResponse {
+  accounts: ComparisonAccount[];
+}
