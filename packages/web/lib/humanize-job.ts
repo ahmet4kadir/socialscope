@@ -31,6 +31,12 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp; message: string; detail?: string 
     detail: 'Önce onun bitmesini bekleyin, sonra tekrar deneyin.',
   },
   {
+    pattern: /Could not launch the login browser|Target page, context or browser has been closed/i,
+    message: 'Bu sunucuda giriş penceresi açılamıyor.',
+    detail:
+      'Sunucularda ekran olmadığı için giriş burada yapılamaz. Kendi bilgisayarınızda giriş yapıp Oturum bölümünden "İndir" ile oturum dosyasını alın, sonra buradaki "Yükle" ile aktarın.',
+  },
+  {
     pattern: /Could not launch the scraper browser/i,
     message: 'Tarama motoru başlatılamadı.',
     detail: 'Kurulum eksik olabilir; teknik görünümdeki ayrıntıyı sistem yöneticinizle paylaşın.',
