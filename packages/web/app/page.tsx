@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { AccountRole, Platform } from '@socialscope/shared';
 
+import { AnalysisPanel } from '@/components/AnalysisPanel';
 import { DashboardPanel } from '@/components/DashboardPanel';
 import { JobLogCard } from '@/components/JobLogCard';
 import { PostsPanel } from '@/components/PostsPanel';
@@ -18,7 +19,14 @@ import type {
 
 const GENERIC_ERROR = 'Sunucuya ulaşılamadı — sayfayı yenileyip tekrar deneyin.';
 
+const TABS = [
+  { id: 'panel', label: 'Panel' },
+  { id: 'analiz', label: 'Analiz' },
+] as const;
+type TabId = (typeof TABS)[number]['id'];
+
 export default function HomePage() {
+  const [tab, setTab] = useState<TabId>('panel');
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
   const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
   const [schemaWarning, setSchemaWarning] = useState<string | null>(null);
@@ -176,12 +184,33 @@ export default function HomePage() {
         </p>
       </header>
 
+      <nav className="flex gap-1 border-b border-slate-800">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+              tab === id
+                ? 'border-b-2 border-emerald-500 text-emerald-400'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
       {error && (
         <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </p>
       )}
 
+      {tab === 'analiz' && <AnalysisPanel accounts={accounts} />}
+
+      {tab === 'panel' && (
+        <>
       <DashboardPanel
         accounts={accounts}
         busy={busy}
@@ -224,6 +253,8 @@ export default function HomePage() {
           busy={busy}
           onTrack={(post) => void startJob('/api/track', { url: post.url })}
         />
+      )}
+        </>
       )}
     </main>
   );

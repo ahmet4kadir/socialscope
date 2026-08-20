@@ -1,4 +1,13 @@
-import type { AccountRole, MediaType, Platform } from '@socialscope/shared';
+import type {
+  AccountMetrics,
+  AccountRole,
+  HashtagMetric,
+  HeatmapCell,
+  LengthBucketMetric,
+  MediaType,
+  MediaTypeMetric,
+  Platform,
+} from '@socialscope/shared';
 
 // Shapes exchanged between the API routes and the client components.
 
@@ -53,4 +62,20 @@ export interface PostWithMetrics {
   capturedAt: string;
   /** null = never tracked; 'active' = being tracked; 'stopped' = 48h window over. */
   tracking: 'active' | 'stopped' | null;
+}
+
+export interface FollowerPoint {
+  capturedAt: string;
+  followers: number | null;
+  following: number | null;
+}
+
+/** Everything the Analiz tab renders for one account. */
+export interface AnalysisResponse {
+  metrics: AccountMetrics;
+  media: MediaTypeMetric[];
+  heatmap: HeatmapCell[];
+  hashtags: HashtagMetric[];
+  contentLength: LengthBucketMetric[];
+  followers: FollowerPoint[];
 }

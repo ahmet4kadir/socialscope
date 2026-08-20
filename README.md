@@ -5,9 +5,10 @@ competitor accounts (Instagram / X), tracks new posts' performance with hourly
 snapshots, computes engagement metrics, and uses Claude to generate
 competitor comparisons and actionable recommendations.
 
-> **Status: work in progress.** Stage 4 of 10 (scrapers, control panel,
-> time-series tracker). The full README — architecture diagram, setup
-> workflow, screenshots, data model — lands with the final stage.
+> **Status: work in progress.** Stage 6 of 10 (scrapers, control panel,
+> tracker, metrics engine, analysis dashboard). The full README —
+> architecture diagram, setup workflow, screenshots, data model — lands with
+> the final stage.
 >
 > Scraping is for educational/analysis purposes: use a throwaway account at
 > low volume.
