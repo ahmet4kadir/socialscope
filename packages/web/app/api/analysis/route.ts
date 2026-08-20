@@ -27,6 +27,7 @@ export function GET(request: Request): NextResponse {
       hashtags: [],
       contentLength: [],
       followers: [],
+      profilePostCount: null,
     };
     return NextResponse.json(empty);
   }

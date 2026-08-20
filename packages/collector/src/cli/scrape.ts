@@ -19,7 +19,8 @@ import { fail } from './common';
 const USAGE =
   'Usage: npm run scrape -- --platform instagram|x --user <username> [--role me|competitor] [--limit 25] [--force]';
 const DEFAULT_LIMIT = 25;
-const MAX_LIMIT = 30;
+// Explicit --limit may go deeper (archive backfill); default sweeps stay small.
+const MAX_LIMIT = 100;
 
 async function main(): Promise<void> {
   let values;
@@ -48,7 +49,7 @@ async function main(): Promise<void> {
   const limit = values.limit === undefined ? DEFAULT_LIMIT : Number(values.limit);
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
     return fail(
-      `--limit must be an integer between 1 and ${MAX_LIMIT} (the tool deliberately scrapes small volumes).`,
+      `--limit must be an integer between 1 and ${MAX_LIMIT} (default sweeps stay at ${DEFAULT_LIMIT}; higher values are for gradual archive backfill).`,
     );
   }
 

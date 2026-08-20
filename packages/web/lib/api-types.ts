@@ -78,6 +78,8 @@ export interface AnalysisResponse {
   hashtags: HashtagMetric[];
   contentLength: LengthBucketMetric[];
   followers: FollowerPoint[];
+  /** The profile's real total post count (archive holds a growing subset). */
+  profilePostCount: number | null;
 }
 
 /** One column of the Karşılaştırma (benchmarking) table. */
@@ -86,6 +88,7 @@ export interface ComparisonAccount {
   username: string;
   role: AccountRole;
   postCount: number;
+  profilePostCount: number | null;
   avgEngagement: number | null;
   avgLikes: number | null;
   avgComments: number | null;

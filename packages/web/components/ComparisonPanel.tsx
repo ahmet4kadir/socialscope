@@ -29,7 +29,8 @@ const METRIC_ROWS: MetricRow[] = [
   { label: 'Ort. beğeni', value: (a) => a.avgLikes },
   { label: 'Ort. yorum', value: (a) => a.avgComments },
   { label: 'Gönderi / hafta', value: (a) => a.postingFrequencyPerWeek },
-  { label: 'Gönderi sayısı', value: (a) => a.postCount },
+  { label: 'Profil gönderi sayısı', value: (a) => a.profilePostCount },
+  { label: 'İncelenen gönderi', value: (a) => a.postCount },
 ];
 
 function bestSlotLabel(account: ComparisonAccount): string {

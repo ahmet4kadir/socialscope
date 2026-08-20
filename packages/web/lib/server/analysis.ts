@@ -66,6 +66,26 @@ export function loadPostStats(
   });
 }
 
+/** The profile's own total post count from the latest account snapshot. */
+export function loadProfilePostCount(
+  db: Database,
+  platform: Platform,
+  username: string,
+): number | null {
+  try {
+    const row = db
+      .prepare(
+        `SELECT post_count FROM account_snapshots
+         WHERE platform = ? AND username = ? AND post_count IS NOT NULL
+         ORDER BY captured_at DESC LIMIT 1`,
+      )
+      .get(platform, username) as { post_count: number } | undefined;
+    return row?.post_count ?? null;
+  } catch {
+    return null; // table missing (pre-migration-003)
+  }
+}
+
 export function loadFollowerSeries(
   db: Database,
   platform: Platform,
@@ -100,6 +120,7 @@ export function analyzeAccount(
     hashtags: hashtagEngagement(posts),
     contentLength: contentLengthPerformance(posts),
     followers: loadFollowerSeries(db, platform, username),
+    profilePostCount: loadProfilePostCount(db, platform, username),
   };
 }
 

@@ -4,6 +4,7 @@ import { hasSession } from '../browser/session';
 import { openDb } from '../db/connection';
 import { migrate } from '../db/migrate';
 import {
+  countArchivedPosts,
   deactivateExpired,
   enrollTracking,
   getActiveTrackedPosts,
@@ -11,6 +12,7 @@ import {
   isSweepFresh,
   lastSnapshotAt,
   lastSweepAt,
+  latestProfilePostCount,
   listAccounts,
   recordAccountSnapshot,
   recordSweep,
@@ -22,6 +24,14 @@ import { cadenceMs, nextDueAt, shouldAutoEnroll } from '../tracking/schedule';
 
 const SWEEP_LIMIT = 25;
 const RETRY_DELAY_MS = 30 * 60 * 1000;
+
+// Archive deepening: once a day, ONE account's history is fetched a step
+// deeper, so the local archive grows slowly instead of hammering platforms.
+const DEEPEN_STEP = 25;
+const ARCHIVE_CAP = Math.max(
+  SWEEP_LIMIT,
+  Number(process.env.ARCHIVE_CAP ?? 100) || 100,
+);
 
 const db = openDb();
 migrate(db);
@@ -93,6 +103,54 @@ async function sweepAccounts(): Promise<void> {
   }
 }
 
+/**
+ * Deepens ONE account's archive per day: fetches DEEPEN_STEP posts beyond
+ * what the archive already holds, until ARCHIVE_CAP or the profile's real
+ * post count is reached. Picks the account with the smallest archive first.
+ */
+async function deepenOneArchive(): Promise<void> {
+  const candidates = listAccounts(db)
+    .filter((account) => hasSession(account.platform))
+    .map((account) => ({
+      account,
+      archived: countArchivedPosts(db, account.platform, account.username),
+      total: latestProfilePostCount(db, account.platform, account.username),
+    }))
+    .filter(
+      ({ archived, total }) =>
+        archived < ARCHIVE_CAP && (total === null || archived < total),
+    )
+    .sort((a, b) => a.archived - b.archived);
+
+  const next = candidates[0];
+  if (!next) {
+    log('deepen: every archive is complete or at cap — nothing to do.');
+    return;
+  }
+
+  const { account, archived } = next;
+  const target = Math.min(archived + DEEPEN_STEP, ARCHIVE_CAP);
+  const label = `${account.platform}/@${account.username}`;
+  log(`deepen ${label}: archive ${archived} → hedef ${target} gönderi`);
+  try {
+    const { posts, account: info } = await scraperFor(account.platform).fetchProfile(
+      account.username,
+      target,
+    );
+    const result = saveScrapedPosts(db, account, posts);
+    recordAccountSnapshot(db, account.platform, account.username, info);
+    recordSweep(db, account.platform, account.username);
+    const nowArchived = countArchivedPosts(db, account.platform, account.username);
+    log(
+      `deepen ${label}: ${result.saved} post(s) saved, archive now ${nowArchived}` +
+        (result.newPostIds.length > 0 ? ` (+${result.newPostIds.length} new)` : ' (feed exhausted?)'),
+    );
+  } catch (error) {
+    const message = error instanceof ScrapeError ? error.message : String(error);
+    log(`deepen ${label}: FAILED — ${message}`);
+  }
+}
+
 /** Snapshots every tracked post that is due, one at a time. */
 async function snapshotDuePosts(): Promise<void> {
   const stopped = deactivateExpired(db);
@@ -149,13 +207,16 @@ log('SocialScope tracker started.');
 log(
   `accounts: ${listAccounts(db).length}, actively tracked posts: ${getActiveTrackedPosts(db).length}`,
 );
-log('schedule: account sweeps every 6h; snapshot checks every 5min; Ctrl+C to stop.');
+log(
+  `schedule: sweeps every 6h; snapshot checks every 5min; archive deepening daily 03:30 (cap ${ARCHIVE_CAP}); Ctrl+C to stop.`,
+);
 
 enqueue(sweepAccounts);
 enqueue(snapshotDuePosts);
 
 cron.schedule('*/5 * * * *', () => enqueue(snapshotDuePosts));
 cron.schedule('0 */6 * * *', () => enqueue(sweepAccounts));
+cron.schedule('30 3 * * *', () => enqueue(deepenOneArchive));
 
 process.on('SIGINT', () => {
   log('tracker stopping…');

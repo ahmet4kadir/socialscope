@@ -178,6 +178,38 @@ export function recordAccountSnapshot(
   ).run(platform, username, capturedAt, info.followers, info.following, info.postCount);
 }
 
+/** How many posts of this account the local archive holds. */
+export function countArchivedPosts(
+  db: Database,
+  platform: Platform,
+  username: string,
+): number {
+  const row = db
+    .prepare('SELECT COUNT(*) AS c FROM posts WHERE platform = ? AND username = ?')
+    .get(platform, username) as { c: number };
+  return row.c;
+}
+
+/** The profile's own post count from the latest account snapshot, if known. */
+export function latestProfilePostCount(
+  db: Database,
+  platform: Platform,
+  username: string,
+): number | null {
+  try {
+    const row = db
+      .prepare(
+        `SELECT post_count FROM account_snapshots
+         WHERE platform = ? AND username = ? AND post_count IS NOT NULL
+         ORDER BY captured_at DESC LIMIT 1`,
+      )
+      .get(platform, username) as { post_count: number } | undefined;
+    return row?.post_count ?? null;
+  } catch {
+    return null; // table missing (pre-migration-003)
+  }
+}
+
 /** All registered accounts (dashboard cards + the tracker's sweep list). */
 export function listAccounts(db: Database): AccountRow[] {
   return db

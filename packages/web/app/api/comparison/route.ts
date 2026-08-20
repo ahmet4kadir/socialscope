@@ -46,6 +46,7 @@ export function GET(): NextResponse {
       username: entry.username,
       role: entry.role,
       postCount: analysis.metrics.postCount,
+      profilePostCount: analysis.profilePostCount,
       avgEngagement: analysis.metrics.avgEngagement,
       avgLikes: analysis.metrics.avgLikes,
       avgComments: analysis.metrics.avgComments,

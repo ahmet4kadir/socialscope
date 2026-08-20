@@ -110,9 +110,15 @@ export function AnalysisPanel({ accounts }: Props) {
       ? (followerPoints[followerPoints.length - 1]!.followers ?? null)
       : null;
 
+  const profileTotal = data?.profilePostCount ?? null;
+  const analyzedLabel =
+    profileTotal !== null && metrics !== null && profileTotal > metrics.postCount
+      ? `${formatNumber(metrics.postCount)} / ${formatNumber(profileTotal)}`
+      : formatNumber(metrics?.postCount ?? null);
+
   const tiles: Array<{ label: string; value: string }> = [
     { label: 'Takipçi', value: formatNumber(currentFollowers) },
-    { label: 'Gönderi', value: formatNumber(metrics?.postCount ?? null) },
+    { label: 'İncelenen gönderi', value: analyzedLabel },
     { label: 'Ort. etkileşim', value: formatNumber(metrics?.avgEngagement ?? null) },
     { label: 'Ort. beğeni', value: formatNumber(metrics?.avgLikes ?? null) },
     { label: 'Ort. yorum', value: formatNumber(metrics?.avgComments ?? null) },
