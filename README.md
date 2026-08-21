@@ -212,11 +212,6 @@ requires login at `/giris` (leave it unset on localhost).
 velocity/peak/plateau math) and every recommendation rule's trigger
 conditions — 35 tests.
 
-## Screenshots
-
-_Coming soon — dashboard, analysis charts, comparison table, tracking
-curves._
-
 ## Project notes
 
 Built as an internship project, developed stage by stage (monorepo skeleton →
